@@ -11,6 +11,8 @@ import ComponentHandler from './handlers/ComponentHandler'
 import ModalHandler from './handlers/ModalHandler'
 import ContextMenuHandler from './handlers/ContextMenuHandler'
 import EntitlementHandler from './handlers/EntitlementHandler'
+import PollHandler from './handlers/PollHandler'
+import AutoModHandler from './handlers/AutoModHandler'
 import { ICategorySetting, Options } from '..'
 import Events from './enums/Events'
 import CommandHandler from './CommandHandler'
@@ -43,6 +45,8 @@ export default class SpaceCommands extends EventEmitter {
   private _modalHandler: ModalHandler | null = null
   private _contextMenuHandler: ContextMenuHandler | null = null
   private _entitlementHandler: EntitlementHandler | null = null
+  private _pollHandler: PollHandler | null = null
+  private _autoModHandler: AutoModHandler | null = null
 
   constructor(client: Client, options?: Options) {
     super()
@@ -195,6 +199,8 @@ export default class SpaceCommands extends EventEmitter {
     )
 
     this._entitlementHandler = new EntitlementHandler(this)
+    this._pollHandler = new PollHandler(this)
+    this._autoModHandler = new AutoModHandler(this)
 
     console.log('SpaceCommands > Your bot is now running.')
   }
@@ -424,6 +430,14 @@ export default class SpaceCommands extends EventEmitter {
 
   public get entitlementHandler(): EntitlementHandler {
     return this._entitlementHandler!
+  }
+
+  public get pollHandler(): PollHandler {
+    return this._pollHandler!
+  }
+
+  public get autoModHandler(): AutoModHandler {
+    return this._autoModHandler!
   }
 }
 
