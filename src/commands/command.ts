@@ -21,7 +21,7 @@ export = {
       name: 'action',
       description: 'Either "enable" or "disable"',
       required: true,
-      type: 'STRING',
+      type: 3,
       choices: [
         {
           name: 'Enable',
@@ -34,7 +34,7 @@ export = {
       name: 'command',
       description: 'The name of the command',
       required: true,
-      type: 'STRING',
+      type: 3,
     },
   ],
 

@@ -251,6 +251,7 @@ export default class CommandHandler {
       expectedArgsTypes,
       minArgs,
       options = [],
+      autocomplete,
     } = configuration
 
     const { testOnly } = configuration
@@ -389,6 +390,11 @@ export default class CommandHandler {
         }
       } else {
         await slashCommands.create(names[0], description, options)
+      }
+
+      if (autocomplete) {
+        const slashCommands = instance.slashCommands
+        slashCommands.registerAutocomplete(names[0], autocomplete)
       }
     }
 
