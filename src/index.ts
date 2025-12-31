@@ -25,7 +25,7 @@ export default class SpaceCommands extends EventEmitter {
   private _featuresDir = ''
   private _supabaseClient: SupabaseClient | null = null
   private _displayName = ''
-  private _prefixes: { [name: string]: string} = {}
+  private _prefixes: { [name: string]: string } = {}
   private _categories: Map<String, String | GuildEmoji> = new Map() // <Category Name, Emoji Icon>
   private _hiddenCategories: string[] = []
   private _color: ColorResolvable | null = null
@@ -73,7 +73,6 @@ export default class SpaceCommands extends EventEmitter {
       messagesPath,
       supabaseUrl,
       supabaseKey,
-      mongoUri, // Deprecated - use supabaseUrl and supabaseKey instead
       showWarns = true,
       delErrMsgCooldown = -1,
       defaultLanguage = 'english',
@@ -92,26 +91,6 @@ export default class SpaceCommands extends EventEmitter {
       this._supabaseClient = await supabase(supabaseUrl, supabaseKey, this)
 
       // Load prefixes from Supabase
-      const results: any[] = await prefixes.find({})
-
-      for (const result of results) {
-        const { _id, prefix } = result
-
-        this._prefixes[_id] = prefix
-      }
-    } else if (mongoUri) {
-      // MongoDB support deprecated but still available
-      if (showWarns) {
-        console.warn(
-          'SpaceCommands > MongoDB support is deprecated. Please migrate to Supabase. See documentation for details.'
-        )
-      }
-
-      const mongo = await import('./mongo')
-      await mongo.default(mongoUri, this, dbOptions)
-
-      this._supabaseClient = null
-
       const results: any[] = await prefixes.find({})
 
       for (const result of results) {

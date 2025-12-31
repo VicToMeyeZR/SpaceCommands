@@ -1,6 +1,6 @@
 {
   "name": "spacecommands",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "main": "dist/index.js",
   "types": "./typings.d.ts",
   "typings": "./typings.d.ts",
@@ -38,9 +38,9 @@
   "author": "SpaceCommands Contributors",
   "license": "MIT",
   "dependencies": {
-    "discord.js": "^14.25.1",
-    "dotenv": "^16.4.7",
-    "@supabase/supabase-js": "^2.39.0"
+    "@supabase/supabase-js": "^2.89.0",
+    "discord.js": "^14.0.0",
+    "dotenv": "^16.4.7"
   },
   "devDependencies": {
     "@types/node": "^22.10.5",

@@ -1,26 +1,17 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getSupabaseClient = void 0;
-// @ts-nocheck
+exports.getSupabaseClient = exports.initSupabase = void 0;
 const supabase_js_1 = require("@supabase/supabase-js");
-const Events_1 = __importDefault(require("./enums/Events"));
-let supabaseClient = null;
-exports.default = async (supabaseUrl, supabaseKey, instance) => {
-    supabaseClient = (0, supabase_js_1.createClient)(supabaseUrl, supabaseKey);
-    // Test the connection
-    const { error } = await supabaseClient.from('spacecommands_prefixes').select('count').limit(1);
-    if (error && error.code !== 'PGRST116') { // PGRST116 is "no rows returned" which is fine
-        console.error('SpaceCommands > Supabase connection error:', error);
-        instance.emit(Events_1.default.DATABASE_CONNECTED, null, 'Error');
-        throw new Error(`Failed to connect to Supabase: ${error.message}`);
+let supabase = null;
+const initSupabase = (url, key) => {
+    if (!url || !key) {
+        console.warn('SpaceCommands > Supabase URL or Key not provided.');
+        return;
     }
-    instance.emit(Events_1.default.DATABASE_CONNECTED, supabaseClient, 'Connected');
-    return supabaseClient;
+    supabase = (0, supabase_js_1.createClient)(url, key);
 };
+exports.initSupabase = initSupabase;
 const getSupabaseClient = () => {
-    return supabaseClient;
+    return supabase;
 };
 exports.getSupabaseClient = getSupabaseClient;

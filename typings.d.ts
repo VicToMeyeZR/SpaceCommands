@@ -18,8 +18,6 @@ export default class SpaceCommands extends EventEmitter {
   private _defaultPrefix: string
   private _commandsDir: string
   private _featuresDir: string
-  private _mongo: string | undefined
-  private _mongoConnection: Connection | null
   private _displayName: string
   private _prefixes: { [name: string]: string }
   private _categories: Map<String, String | GuildEmoji>
@@ -45,8 +43,6 @@ export default class SpaceCommands extends EventEmitter {
 
   constructor(client: Client, options?: Options)
 
-  public get mongoPath(): string
-  public setMongoPath(mongoPath: string | undefined): SpaceCommands
   public get client(): Client
   public get displayName(): string
   public setDisplayName(displayName: string): SpaceCommands
@@ -67,10 +63,6 @@ export default class SpaceCommands extends EventEmitter {
   ): SpaceCommands
   public isEmojiUsed(emoji: string): boolean
   public get commandHandler(): CommandHandler
-  public get mongoConnection(): Connection | null
-  public isDBConnected(): boolean
-  public setTagPeople(tagPeople: boolean): SpaceCommands
-  public get tagPeople(): boolean
   public get showWarns(): boolean
   public get delErrMsgCooldown(): number
   public get ignoreBots(): boolean
@@ -99,9 +91,8 @@ interface OptionsWithS {
   modalsDir?: string
   contextMenusDir?: string
   messagesPath?: string
-  supabaseUrl?: string
-  supabaseKey?: string
-  mongoUri?: string // Deprecated - use supabaseUrl and supabaseKey
+  supabaseUrl: string
+  supabaseKey: string
   showWarns?: boolean
   delErrMsgCooldown?: number
   defaultLanguage?: string
@@ -125,9 +116,8 @@ interface OptionsWithoutS {
   modalsDir?: string
   contextMenusDir?: string
   messagesPath?: string
-  supabaseUrl?: string
-  supabaseKey?: string
-  mongoUri?: string // Deprecated - use supabaseUrl and supabaseKey
+  supabaseUrl: string
+  supabaseKey: string
   showWarns?: boolean
   delErrMsgCooldown?: number
   defaultLanguage?: string

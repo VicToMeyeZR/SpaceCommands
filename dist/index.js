@@ -1,37 +1,4 @@
 "use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -89,26 +56,11 @@ class SpaceCommands extends events_1.EventEmitter {
         if (!client) {
             throw new Error('No Discord JS Client provided as first argument!');
         }
-        let { commandsDir = '', commandDir = '', featuresDir = '', featureDir = '', componentsDir, modalsDir, contextMenusDir, messagesPath, supabaseUrl, supabaseKey, mongoUri, // Deprecated - use supabaseUrl and supabaseKey instead
-        showWarns = true, delErrMsgCooldown = -1, defaultLanguage = 'english', ignoreBots = true, dbOptions, testServers, botOwners, disabledDefaultCommands = [], typeScript = false, ephemeral = true, debug = false, } = options || {};
+        let { commandsDir = '', commandDir = '', featuresDir = '', featureDir = '', componentsDir, modalsDir, contextMenusDir, messagesPath, supabaseUrl, supabaseKey, showWarns = true, delErrMsgCooldown = -1, defaultLanguage = 'english', ignoreBots = true, dbOptions, testServers, botOwners, disabledDefaultCommands = [], typeScript = false, ephemeral = true, debug = false, } = options || {};
         // Support for Supabase (recommended) or MongoDB (deprecated)
         if (supabaseUrl && supabaseKey) {
             this._supabaseClient = await (0, supabase_1.default)(supabaseUrl, supabaseKey, this);
             // Load prefixes from Supabase
-            const results = await prefixes_1.default.find({});
-            for (const result of results) {
-                const { _id, prefix } = result;
-                this._prefixes[_id] = prefix;
-            }
-        }
-        else if (mongoUri) {
-            // MongoDB support deprecated but still available
-            if (showWarns) {
-                console.warn('SpaceCommands > MongoDB support is deprecated. Please migrate to Supabase. See documentation for details.');
-            }
-            const mongo = await Promise.resolve().then(() => __importStar(require('./mongo')));
-            await mongo.default(mongoUri, this, dbOptions);
-            this._supabaseClient = null;
             const results = await prefixes_1.default.find({});
             for (const result of results) {
                 const { _id, prefix } = result;
