@@ -46,6 +46,8 @@ const ComponentHandler_1 = __importDefault(require("./handlers/ComponentHandler"
 const ModalHandler_1 = __importDefault(require("./handlers/ModalHandler"));
 const ContextMenuHandler_1 = __importDefault(require("./handlers/ContextMenuHandler"));
 const EntitlementHandler_1 = __importDefault(require("./handlers/EntitlementHandler"));
+const PollHandler_1 = __importDefault(require("./handlers/PollHandler"));
+const AutoModHandler_1 = __importDefault(require("./handlers/AutoModHandler"));
 const Events_1 = __importDefault(require("./enums/Events"));
 const CommandHandler_1 = __importDefault(require("./CommandHandler"));
 class SpaceCommands extends events_1.EventEmitter {
@@ -76,6 +78,8 @@ class SpaceCommands extends events_1.EventEmitter {
     _modalHandler = null;
     _contextMenuHandler = null;
     _entitlementHandler = null;
+    _pollHandler = null;
+    _autoModHandler = null;
     constructor(client, options) {
         super();
         this._client = client;
@@ -150,6 +154,8 @@ class SpaceCommands extends events_1.EventEmitter {
         this._modalHandler = new ModalHandler_1.default(this, modalsDir, typeScript);
         this._contextMenuHandler = new ContextMenuHandler_1.default(this, contextMenusDir, typeScript);
         this._entitlementHandler = new EntitlementHandler_1.default(this);
+        this._pollHandler = new PollHandler_1.default(this);
+        this._autoModHandler = new AutoModHandler_1.default(this);
         console.log('SpaceCommands > Your bot is now running.');
     }
     setMongoPath(mongoPath) {
@@ -321,6 +327,12 @@ class SpaceCommands extends events_1.EventEmitter {
     }
     get entitlementHandler() {
         return this._entitlementHandler;
+    }
+    get pollHandler() {
+        return this._pollHandler;
+    }
+    get autoModHandler() {
+        return this._autoModHandler;
     }
 }
 exports.default = SpaceCommands;

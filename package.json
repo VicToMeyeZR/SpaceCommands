@@ -2,6 +2,7 @@
   "name": "spacecommands",
   "version": "2.0.0",
   "main": "dist/index.js",
+  "types": "./typings.d.ts",
   "typings": "./typings.d.ts",
   "scripts": {
     "tsc": "tsc -w --outDir dist --rootDir src --skipLibCheck",
@@ -13,11 +14,26 @@
   "keywords": [
     "discord",
     "discord.js",
+    "discord-js",
     "bot",
     "command-handler",
     "slash-commands",
     "discord-bot",
-    "framework"
+    "framework",
+    "typescript",
+    "discord-api",
+    "discord-framework",
+    "discord-commands",
+    "discord-slash-commands",
+    "discord-interactions",
+    "discord-modals",
+    "discord-buttons",
+    "discord-select-menus",
+    "discord-context-menus",
+    "discord-polls",
+    "discord-automod",
+    "discord-entitlements",
+    "discord-monetization"
   ],
   "author": "SpaceCommands Contributors",
   "license": "MIT",
@@ -31,17 +47,26 @@
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.7.2"
   },
-  "description": "A modern, feature-rich Discord.js command handler with slash commands, permissions, cooldowns, and more",
+  "description": "A modern, feature-rich Discord.js v14 command handler with slash commands, polls, AutoMod, permissions, cooldowns, modals, buttons, select menus, context menus, and Discord monetization support",
   "repository": {
     "type": "git",
-    "url": "https://github.com/VicToMeyeZR/SpaceCommands"
+    "url": "git+https://github.com/VicToMeyeZR/SpaceCommands.git"
   },
+  "bugs": {
+    "url": "https://github.com/VicToMeyeZR/SpaceCommands/issues"
+  },
+  "homepage": "https://github.com/VicToMeyeZR/SpaceCommands#readme",
   "engines": {
     "node": ">=18.0.0"
   },
   "files": [
     "dist",
     "typings.d.ts",
-    "messages.json"
-  ]
+    "messages.json",
+    "LICENSE",
+    "README.md"
+  ],
+  "peerDependencies": {
+    "discord.js": "^14.0.0"
+  }
 }

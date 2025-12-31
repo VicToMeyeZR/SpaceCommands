@@ -17,6 +17,8 @@ SpaceCommands is a modern, feature-rich Discord.js command handler library. Buil
 - 📋 **Context Menus** - User and message context menu commands
 - 💎 **Premium Features** - Discord entitlement and monetization support
 - 🛠️ **Component Utilities** - Simplified builders and interaction collectors
+- 📊 **Poll Support** - Native Discord polls with result tracking
+- 🛡️ **AutoMod Integration** - Full AutoMod rule creation and management
 
 ## Installation
 
@@ -356,6 +358,152 @@ const collector = InteractionCollectorUtils.createSelectMenuCollector(
 collector.on('collect', async (i) => {
   await i.reply(`Selected: ${i.values.join(', ')}`);
 });
+```
+
+## Polls
+
+Create and manage Discord's native polls:
+
+```javascript
+// Access the poll handler
+const pollHandler = instance.pollHandler;
+
+// Get a poll from a message
+const poll = message.poll;
+
+if (poll) {
+  // Get poll results
+  const results = await pollHandler.getPollResults(poll);
+
+  // Get winning answer(s)
+  const winners = pollHandler.getWinningAnswers(poll);
+  console.log(`Winning answer: ${winners[0].text}`);
+
+  // Get poll statistics
+  const stats = pollHandler.getPollStats(poll);
+  console.log(`Total votes: ${stats.totalVotes}`);
+
+  // Get formatted results
+  const formatted = await pollHandler.getFormattedResults(poll);
+  await message.channel.send(formatted);
+
+  // Check if a user voted
+  const hasVoted = await pollHandler.hasUserVoted(poll, userId);
+
+  // Get user's votes
+  const userVotes = await pollHandler.getUserVotes(poll, userId);
+
+  // End poll early
+  await pollHandler.endPoll(poll);
+}
+
+// Register handler for when a poll ends
+pollHandler.registerPollEndHandler({
+  pollId: /poll-.+/, // Regex or specific message ID
+  callback: async (poll, instance) => {
+    const results = await instance.pollHandler.getFormattedResults(poll);
+    await poll.message.channel.send(`Poll ended!\n${results}`);
+  },
+});
+
+// Fetch a poll from a message ID
+const fetchedPoll = await pollHandler.fetchPoll(messageId, channelId);
+```
+
+## AutoMod
+
+Manage Discord's AutoMod rules programmatically:
+
+```javascript
+const { AutoModerationRuleEventType, AutoModerationActionType } = require('discord.js');
+
+// Access the AutoMod handler
+const autoModHandler = instance.autoModHandler;
+
+// Create a keyword filter rule
+const keywordRule = await autoModHandler.createKeywordRule(
+  guild,
+  'No Profanity',
+  ['badword1', 'badword2'],
+  [
+    {
+      type: AutoModerationActionType.BlockMessage,
+      metadata: { customMessage: 'Please keep chat family-friendly!' }
+    },
+    {
+      type: AutoModerationActionType.Timeout,
+      metadata: { durationSeconds: 60 }
+    }
+  ],
+  {
+    allowList: ['allowed-phrase'],
+    exemptRoles: ['moderator-role-id'],
+    exemptChannels: ['staff-channel-id']
+  }
+);
+
+// Create a spam rule
+const spamRule = await autoModHandler.createSpamRule(
+  guild,
+  'Anti-Spam',
+  [{ type: AutoModerationActionType.BlockMessage }]
+);
+
+// Create a mention spam rule
+const mentionRule = await autoModHandler.createMentionSpamRule(
+  guild,
+  'Mention Limit',
+  5, // Maximum 5 mentions
+  [{ type: AutoModerationActionType.BlockMessage }],
+  { raidProtection: true }
+);
+
+// Create a regex pattern rule
+const regexRule = await autoModHandler.createRegexRule(
+  guild,
+  'Link Blocker',
+  ['(https?://)?([\\da-z\\.-]+)\\.([a-z\\.]{2,6})'],
+  [{ type: AutoModerationActionType.BlockMessage }]
+);
+
+// Create a preset keyword rule
+const { AutoModerationRuleKeywordPresetType } = require('discord.js');
+const presetRule = await autoModHandler.createPresetRule(
+  guild,
+  'Block Profanity',
+  [AutoModerationRuleKeywordPresetType.Profanity],
+  [{ type: AutoModerationActionType.BlockMessage }]
+);
+
+// Register handler for AutoMod actions
+autoModHandler.registerActionHandler({
+  ruleId: 'specific-rule-id', // Optional: specific rule or regex
+  callback: async (execution, instance) => {
+    console.log(`AutoMod triggered by ${execution.userId}`);
+    console.log(`Rule: ${execution.ruleId}`);
+    console.log(`Action: ${execution.action.type}`);
+
+    // Log to a channel
+    const logChannel = execution.guild.channels.cache.get('log-channel-id');
+    if (logChannel) {
+      await logChannel.send(`AutoMod: User <@${execution.userId}> triggered rule ${execution.ruleTriggerType}`);
+    }
+  },
+});
+
+// Fetch all AutoMod rules for a guild
+const rules = await autoModHandler.fetchGuildRules(guild);
+
+// Update an existing rule
+await autoModHandler.updateRule(guild, ruleId, {
+  enabled: false, // Disable the rule
+});
+
+// Delete a rule
+await autoModHandler.deleteRule(guild, ruleId);
+
+// Clear cache
+autoModHandler.clearGuildCache(guildId);
 ```
 
 ## Documentation

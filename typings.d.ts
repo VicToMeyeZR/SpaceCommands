@@ -40,6 +40,8 @@ export default class SpaceCommands extends EventEmitter {
   private _modalHandler: ModalHandler | null
   private _contextMenuHandler: ContextMenuHandler | null
   private _entitlementHandler: EntitlementHandler | null
+  private _pollHandler: PollHandler | null
+  private _autoModHandler: AutoModHandler | null
 
   constructor(client: Client, options?: Options)
 
@@ -83,6 +85,8 @@ export default class SpaceCommands extends EventEmitter {
   public get modalHandler(): ModalHandler
   public get contextMenuHandler(): ContextMenuHandler
   public get entitlementHandler(): EntitlementHandler
+  public get pollHandler(): PollHandler
+  public get autoModHandler(): AutoModHandler
 }
 
 interface OptionsWithS {
@@ -252,6 +256,20 @@ export {
   IEntitlementCheck,
   EntitlementHandler,
 } from './src/handlers/EntitlementHandler'
+
+export {
+  IPollAnswerOption,
+  IPollConfig,
+  IPollVoteHandler,
+  IPollEndHandler,
+  PollHandler,
+} from './src/handlers/PollHandler'
+
+export {
+  IAutoModRuleConfig,
+  IAutoModActionHandler,
+  AutoModHandler,
+} from './src/handlers/AutoModHandler'
 
 // Utility classes
 export { ComponentUtils } from './src/utils/ComponentBuilder'
