@@ -561,24 +561,11 @@ autoModHandler.clearGuildCache(guildId);
 
 ## Documentation
 
-For detailed documentation, examples, and guides, visit our [GitHub repository](https://github.com/VicToMeyeZR/WOKCommands).
+For detailed documentation, examples, and guides, visit our [GitHub repository](https://github.com/VicToMeyeZR/SpaceCommands).
 
 ## Support
 
-If you need help or have questions, please open an issue on our [GitHub repository](https://github.com/VicToMeyeZR/WOKCommands/issues).
-
-## Migration from WOKCommands
-
-SpaceCommands is a modernized fork of WOKCommands with the following improvements:
-- Updated to Discord.js v14
-- Modern ES modules and TypeScript support
-- Improved performance and reliability
-- Updated database collection names (prefix: `spacecommands-` instead of `wokcommands-`)
-
-To migrate, simply:
-1. Update your imports from `wokcommands` to `spacecommands`
-2. Update class name from `WOKCommands` to `SpaceCommands`
-3. Install the latest dependencies
+If you need help or have questions, please open an issue on our [GitHub repository](https://github.com/VicToMeyeZR/SpaceCommands/issues).
 
 ## License
 
