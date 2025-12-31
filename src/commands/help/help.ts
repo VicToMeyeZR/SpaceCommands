@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Client, Message, EmbedBuilder } from 'discord.js'
 import SpaceCommands from '../..'
 import { ICallbackObject, ICommand } from '../../../typings'

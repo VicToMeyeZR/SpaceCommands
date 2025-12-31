@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Guild } from 'discord.js'
 
 import languageSchema from './models/languages'

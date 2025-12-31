@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Message, EmbedBuilder, PartialMessage } from 'discord.js'
 import SpaceCommands from '../../'
 

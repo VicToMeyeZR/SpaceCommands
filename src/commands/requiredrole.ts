@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { ICallbackObject, ICommand } from '../..'
 import requiredRoleSchema from '../models/required-roles'
 

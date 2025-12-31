@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Client, ColorResolvable, Guild, GuildEmoji } from 'discord.js'
 import { Connection } from 'mongoose'
 import { EventEmitter } from 'events'

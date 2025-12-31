@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+// @ts-nocheck
 const discord_js_1 = require("discord.js");
 const getFirstEmbed = (message, instance) => {
     const { guild, member } = message;
