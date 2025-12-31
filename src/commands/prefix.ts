@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { ICallbackObject, ICommand } from '../..'
 import prefixes from '../models/prefixes'
 

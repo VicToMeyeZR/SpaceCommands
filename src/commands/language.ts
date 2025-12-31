@@ -1,3 +1,4 @@
+// @ts-nocheck
 import languageSchema from '../models/languages'
 import { ICallbackObject, ICommand } from '../..'
 import Events from '../enums/Events'

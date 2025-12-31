@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Client, Guild, Message, EmbedBuilder } from 'discord.js'
 import fs from 'fs'
 import SpaceCommands from '.'

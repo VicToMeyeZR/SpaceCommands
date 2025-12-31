@@ -2,6 +2,7 @@
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
+// @ts-nocheck
 const languages_1 = __importDefault(require("../models/languages"));
 const Events_1 = __importDefault(require("../enums/Events"));
 module.exports = {

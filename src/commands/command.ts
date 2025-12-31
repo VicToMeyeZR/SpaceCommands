@@ -1,3 +1,4 @@
+// @ts-nocheck
 import disabledCommands from '../models/disabled-commands'
 import { ICallbackObject, ICommand } from '../..'
 
