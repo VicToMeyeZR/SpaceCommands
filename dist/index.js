@@ -5,7 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const events_1 = require("events");
 const FeatureHandler_1 = __importDefault(require("./FeatureHandler"));
-const supabase_1 = __importDefault(require("./supabase"));
+const supabase_1 = require("./supabase");
 const prefixes_1 = __importDefault(require("./models/prefixes"));
 const message_handler_1 = __importDefault(require("./message-handler"));
 const SlashCommands_1 = __importDefault(require("./SlashCommands"));
@@ -59,7 +59,8 @@ class SpaceCommands extends events_1.EventEmitter {
         let { commandsDir = '', commandDir = '', featuresDir = '', featureDir = '', componentsDir, modalsDir, contextMenusDir, messagesPath, supabaseUrl, supabaseKey, showWarns = true, delErrMsgCooldown = -1, defaultLanguage = 'english', ignoreBots = true, dbOptions, testServers, botOwners, disabledDefaultCommands = [], typeScript = false, ephemeral = true, debug = false, } = options || {};
         // Support for Supabase (recommended) or MongoDB (deprecated)
         if (supabaseUrl && supabaseKey) {
-            this._supabaseClient = await (0, supabase_1.default)(supabaseUrl, supabaseKey, this);
+            (0, supabase_1.initSupabase)(supabaseUrl, supabaseKey);
+            this._supabaseClient = (0, supabase_1.getSupabaseClient)();
             // Load prefixes from Supabase
             const results = await prefixes_1.default.find({});
             for (const result of results) {

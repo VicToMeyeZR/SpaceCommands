@@ -4,7 +4,7 @@ import { SupabaseClient } from '@supabase/supabase-js'
 import { EventEmitter } from 'events'
 
 import FeatureHandler from './FeatureHandler'
-import supabase, { getSupabaseClient } from './supabase'
+import { initSupabase, getSupabaseClient } from './supabase'
 import prefixes from './models/prefixes'
 import MessageHandler from './message-handler'
 import SlashCommands from './SlashCommands'
@@ -88,7 +88,8 @@ export default class SpaceCommands extends EventEmitter {
 
     // Support for Supabase (recommended) or MongoDB (deprecated)
     if (supabaseUrl && supabaseKey) {
-      this._supabaseClient = await supabase(supabaseUrl, supabaseKey, this)
+      initSupabase(supabaseUrl, supabaseKey)
+      this._supabaseClient = getSupabaseClient()
 
       // Load prefixes from Supabase
       const results: any[] = await prefixes.find({})
