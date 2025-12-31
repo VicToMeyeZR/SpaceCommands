@@ -514,15 +514,6 @@ For detailed documentation, examples, and guides, visit our [GitHub repository](
 
 If you need help or have questions, please open an issue on our [GitHub repository](https://github.com/VicToMeyeZR/SpaceCommands/issues).
 
-## Migration from WOKCommands
-
-SpaceCommands is a modernized library with the following improvements:
-- Updated to Discord.js v14
-- Modern ES modules and TypeScript support
-- Improved performance and reliability
-
-
-
 ## License
 
 MIT License - see LICENSE file for details.
