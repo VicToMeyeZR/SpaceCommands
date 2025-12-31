@@ -55,12 +55,63 @@ client.on('ready', () => {
     featuresDir: path.join(__dirname, 'features'),
     testServers: ['YOUR_TEST_SERVER_ID'],
     botOwners: ['YOUR_USER_ID'],
-    mongoUri: process.env.MONGO_URI, // Optional
+    // Database (optional - Supabase recommended)
+    supabaseUrl: process.env.SUPABASE_URL,
+    supabaseKey: process.env.SUPABASE_KEY,
   });
 });
 
 client.login(process.env.BOT_TOKEN);
 ```
+
+## Supabase Setup (Recommended)
+
+SpaceCommands now uses Supabase for data persistence instead of MongoDB. Here's how to set it up:
+
+### 1. Create a Supabase Project
+
+1. Go to [supabase.com](https://supabase.com) and create a free account
+2. Create a new project
+3. Copy your project URL and anon/public key
+
+### 2. Set Up the Database
+
+1. In your Supabase dashboard, go to the SQL Editor
+2. Copy the contents of `supabase-schema.sql` from this package
+3. Run the SQL to create all required tables
+
+Or download the schema:
+```bash
+curl -o supabase-schema.sql https://raw.githubusercontent.com/VicToMeyeZR/SpaceCommands/main/supabase-schema.sql
+```
+
+### 3. Configure Your Bot
+
+```javascript
+new SpaceCommands(client, {
+  commandsDir: path.join(__dirname, 'commands'),
+  supabaseUrl: process.env.SUPABASE_URL,        // Your Supabase project URL
+  supabaseKey: process.env.SUPABASE_ANON_KEY,   // Your Supabase anon/public key
+});
+```
+
+### 4. Environment Variables
+
+Create a `.env` file:
+```env
+DISCORD_TOKEN=your_bot_token_here
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=your_anon_key_here
+```
+
+### Benefits of Supabase
+
+- ✅ **Free tier** with generous limits
+- ✅ **Real-time subscriptions** (optional)
+- ✅ **Built-in authentication** (if needed)
+- ✅ **Auto-generated APIs**
+- ✅ **Better performance** than MongoDB for most use cases
+- ✅ **PostgreSQL** under the hood
 
 ## Creating Commands
 
@@ -100,7 +151,9 @@ module.exports = {
 |--------|------|-------------|---------|
 | `commandsDir` | string | Absolute path to commands directory | Required |
 | `featuresDir` | string | Absolute path to features directory | Optional |
-| `mongoUri` | string | MongoDB connection URI | Optional |
+| `supabaseUrl` | string | Supabase project URL | Optional |
+| `supabaseKey` | string | Supabase anon/public key | Optional |
+| `mongoUri` | string | MongoDB URI (deprecated, use Supabase) | Optional |
 | `testServers` | string[] | Guild IDs for testing commands | [] |
 | `botOwners` | string[] | User IDs of bot owners | [] |
 | `defaultLanguage` | string | Default language for messages | 'english' |

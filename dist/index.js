@@ -38,7 +38,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const events_1 = require("events");
 const FeatureHandler_1 = __importDefault(require("./FeatureHandler"));
-const mongo_1 = __importStar(require("./mongo"));
+const supabase_1 = __importDefault(require("./supabase"));
 const prefixes_1 = __importDefault(require("./models/prefixes"));
 const message_handler_1 = __importDefault(require("./message-handler"));
 const SlashCommands_1 = __importDefault(require("./SlashCommands"));
@@ -55,7 +55,7 @@ class SpaceCommands extends events_1.EventEmitter {
     _defaultPrefix = '!';
     _commandsDir = 'commands';
     _featuresDir = '';
-    _mongoConnection = null;
+    _supabaseClient = null;
     _displayName = '';
     _prefixes = {};
     _categories = new Map(); // <Category Name, Emoji Icon>
@@ -89,10 +89,26 @@ class SpaceCommands extends events_1.EventEmitter {
         if (!client) {
             throw new Error('No Discord JS Client provided as first argument!');
         }
-        let { commandsDir = '', commandDir = '', featuresDir = '', featureDir = '', componentsDir, modalsDir, contextMenusDir, messagesPath, mongoUri, showWarns = true, delErrMsgCooldown = -1, defaultLanguage = 'english', ignoreBots = true, dbOptions, testServers, botOwners, disabledDefaultCommands = [], typeScript = false, ephemeral = true, debug = false, } = options || {};
-        if (mongoUri) {
-            await (0, mongo_1.default)(mongoUri, this, dbOptions);
-            this._mongoConnection = (0, mongo_1.getMongoConnection)();
+        let { commandsDir = '', commandDir = '', featuresDir = '', featureDir = '', componentsDir, modalsDir, contextMenusDir, messagesPath, supabaseUrl, supabaseKey, mongoUri, // Deprecated - use supabaseUrl and supabaseKey instead
+        showWarns = true, delErrMsgCooldown = -1, defaultLanguage = 'english', ignoreBots = true, dbOptions, testServers, botOwners, disabledDefaultCommands = [], typeScript = false, ephemeral = true, debug = false, } = options || {};
+        // Support for Supabase (recommended) or MongoDB (deprecated)
+        if (supabaseUrl && supabaseKey) {
+            this._supabaseClient = await (0, supabase_1.default)(supabaseUrl, supabaseKey, this);
+            // Load prefixes from Supabase
+            const results = await prefixes_1.default.find({});
+            for (const result of results) {
+                const { _id, prefix } = result;
+                this._prefixes[_id] = prefix;
+            }
+        }
+        else if (mongoUri) {
+            // MongoDB support deprecated but still available
+            if (showWarns) {
+                console.warn('SpaceCommands > MongoDB support is deprecated. Please migrate to Supabase. See documentation for details.');
+            }
+            const mongo = await Promise.resolve().then(() => __importStar(require('./mongo')));
+            await mongo.default(mongoUri, this, dbOptions);
+            this._supabaseClient = null;
             const results = await prefixes_1.default.find({});
             for (const result of results) {
                 const { _id, prefix } = result;
@@ -101,7 +117,7 @@ class SpaceCommands extends events_1.EventEmitter {
         }
         else {
             if (showWarns) {
-                console.warn('SpaceCommands > No MongoDB connection URI provided. Some features might not work!');
+                console.warn('SpaceCommands > No database connection provided. Some features might not work! Please provide supabaseUrl and supabaseKey.');
             }
             this.emit(Events_1.default.DATABASE_CONNECTED, null, '');
         }
@@ -260,12 +276,15 @@ class SpaceCommands extends events_1.EventEmitter {
     get commandHandler() {
         return this._commandHandler;
     }
+    get supabaseClient() {
+        return this._supabaseClient;
+    }
     get mongoConnection() {
-        return this._mongoConnection;
+        // Deprecated: For backwards compatibility only
+        return this._supabaseClient;
     }
     isDBConnected() {
-        const connection = this.mongoConnection;
-        return !!(connection && connection.readyState === 1);
+        return !!this._supabaseClient;
     }
     setTagPeople(tagPeople) {
         this._tagPeople = tagPeople;

@@ -99,7 +99,9 @@ interface OptionsWithS {
   modalsDir?: string
   contextMenusDir?: string
   messagesPath?: string
-  mongoUri?: string
+  supabaseUrl?: string
+  supabaseKey?: string
+  mongoUri?: string // Deprecated - use supabaseUrl and supabaseKey
   showWarns?: boolean
   delErrMsgCooldown?: number
   defaultLanguage?: string
@@ -123,7 +125,9 @@ interface OptionsWithoutS {
   modalsDir?: string
   contextMenusDir?: string
   messagesPath?: string
-  mongoUri?: string
+  supabaseUrl?: string
+  supabaseKey?: string
+  mongoUri?: string // Deprecated - use supabaseUrl and supabaseKey
   showWarns?: boolean
   delErrMsgCooldown?: number
   defaultLanguage?: string

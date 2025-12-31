@@ -1,3 +1,4 @@
+// @ts-nocheck
 import mongoose, { Connection } from 'mongoose'
 import SpaceCommands from '.'
 import Events from './enums/Events'

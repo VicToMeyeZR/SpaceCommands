@@ -4,6 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getMongoConnection = void 0;
+// @ts-nocheck
 const mongoose_1 = __importDefault(require("mongoose"));
 const Events_1 = __importDefault(require("./enums/Events"));
 const results = {

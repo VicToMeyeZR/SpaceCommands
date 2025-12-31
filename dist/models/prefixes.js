@@ -1,46 +1,81 @@
 "use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
+Object.defineProperty(exports, "__esModule", { value: true });
+// @ts-nocheck
+const supabase_1 = require("../supabase");
+const TABLE_NAME = 'spacecommands_prefixes';
+exports.default = {
+    async find(filter = {}) {
+        const client = (0, supabase_1.getSupabaseClient)();
+        if (!client)
+            return [];
+        let query = client.from(TABLE_NAME).select('*');
+        // Apply filters if provided
+        if (filter._id) {
+            query = query.eq('guild_id', filter._id);
+        }
+        const { data, error } = await query;
+        if (error) {
+            console.error('SpaceCommands > Error fetching prefixes:', error);
+            return [];
+        }
+        // Transform to match Mongoose format
+        return (data || []).map((row) => ({
+            _id: row.guild_id,
+            prefix: row.prefix,
+        }));
+    },
+    async findOne(filter) {
+        const client = (0, supabase_1.getSupabaseClient)();
+        if (!client)
+            return null;
+        const { data, error } = await client
+            .from(TABLE_NAME)
+            .select('*')
+            .eq('guild_id', filter._id)
+            .single();
+        if (error) {
+            if (error.code === 'PGRST116')
+                return null; // No rows found
+            console.error('SpaceCommands > Error finding prefix:', error);
+            return null;
+        }
+        return {
+            _id: data.guild_id,
+            prefix: data.prefix,
         };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
-const mongoose_1 = __importStar(require("mongoose"));
-const reqString = {
-    type: String,
-    required: true,
+    },
+    async findOneAndUpdate(filter, update, options = {}) {
+        const client = (0, supabase_1.getSupabaseClient)();
+        if (!client)
+            return null;
+        const guildId = filter._id;
+        const prefix = update.prefix || update.$set?.prefix;
+        const { data, error } = await client
+            .from(TABLE_NAME)
+            .upsert({ guild_id: guildId, prefix }, { onConflict: 'guild_id' })
+            .select()
+            .single();
+        if (error) {
+            console.error('SpaceCommands > Error upserting prefix:', error);
+            return null;
+        }
+        return {
+            _id: data.guild_id,
+            prefix: data.prefix,
+        };
+    },
+    async deleteOne(filter) {
+        const client = (0, supabase_1.getSupabaseClient)();
+        if (!client)
+            return { deletedCount: 0 };
+        const { error } = await client
+            .from(TABLE_NAME)
+            .delete()
+            .eq('guild_id', filter._id);
+        if (error) {
+            console.error('SpaceCommands > Error deleting prefix:', error);
+            return { deletedCount: 0 };
+        }
+        return { deletedCount: 1 };
+    },
 };
-const schema = new mongoose_1.Schema({
-    // Guild ID
-    _id: reqString,
-    prefix: reqString,
-});
-const name = 'spacecommands-prefixes';
-module.exports = mongoose_1.default.models[name] || mongoose_1.default.model(name, schema, name);
