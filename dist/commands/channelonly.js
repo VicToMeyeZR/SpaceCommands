@@ -17,13 +17,13 @@ module.exports = {
         {
             name: 'command',
             description: 'The command name',
-            type: 'STRING',
+            type: 3,
             required: true,
         },
         {
             name: 'channel',
             description: 'The tag of the channel',
-            type: 'CHANNEL',
+            type: 7,
             required: false,
         },
     ],

@@ -158,7 +158,7 @@ class CommandHandler {
         if (configuration.default && Object.keys(configuration).length === 1) {
             configuration = configuration.default;
         }
-        const { name = fileName, category, commands, aliases, init, callback, run, execute, error, description, requiredPermissions, permissions, slash, expectedArgs, expectedArgsTypes, minArgs, options = [], } = configuration;
+        const { name = fileName, category, commands, aliases, init, callback, run, execute, error, description, requiredPermissions, permissions, slash, expectedArgs, expectedArgsTypes, minArgs, options = [], autocomplete, } = configuration;
         const { testOnly } = configuration;
         if (run || execute) {
             throw new Error(`Command located at "${file}" has either a "run" or "execute" function. Please rename that function to "callback".`);
@@ -249,6 +249,10 @@ class CommandHandler {
             }
             else {
                 await slashCommands.create(names[0], description, options);
+            }
+            if (autocomplete) {
+                const slashCommands = instance.slashCommands;
+                slashCommands.registerAutocomplete(names[0], autocomplete);
             }
         }
         if (callback) {
