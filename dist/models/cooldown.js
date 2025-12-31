@@ -1,51 +1,102 @@
 "use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
-const mongoose_1 = __importStar(require("mongoose"));
-const reqString = {
-    type: String,
-    required: true,
-};
-const schema = new mongoose_1.Schema({
-    // Command-GuildID or Command-GuildID-UserID
-    _id: reqString,
-    name: reqString,
-    type: reqString,
-    cooldown: {
-        type: Number,
-        required: true,
+Object.defineProperty(exports, "__esModule", { value: true });
+// @ts-nocheck
+const supabase_1 = require("../supabase");
+const TABLE_NAME = 'spacecommands_cooldowns';
+exports.default = {
+    async find(filter = {}) {
+        const client = (0, supabase_1.getSupabaseClient)();
+        if (!client)
+            return [];
+        let query = client.from(TABLE_NAME).select('*');
+        // Apply filters
+        if (filter._id) {
+            query = query.eq('id', filter._id);
+        }
+        if (filter.name) {
+            query = query.eq('name', filter.name);
+        }
+        if (filter.type) {
+            query = query.eq('type', filter.type);
+        }
+        const { data, error } = await query;
+        if (error) {
+            console.error('SpaceCommands > Error fetching cooldowns:', error);
+            return [];
+        }
+        return (data || []).map((row) => ({
+            _id: row.id,
+            name: row.name,
+            type: row.type,
+            cooldown: row.cooldown,
+        }));
     },
-});
-const name = 'spacecommands-cooldowns';
-module.exports = mongoose_1.default.models[name] || mongoose_1.default.model(name, schema, name);
+    async findOne(filter) {
+        const client = (0, supabase_1.getSupabaseClient)();
+        if (!client)
+            return null;
+        let query = client.from(TABLE_NAME).select('*');
+        if (filter._id) {
+            query = query.eq('id', filter._id);
+        }
+        const { data, error } = await query.single();
+        if (error) {
+            if (error.code === 'PGRST116')
+                return null;
+            console.error('SpaceCommands > Error finding cooldown:', error);
+            return null;
+        }
+        return {
+            _id: data.id,
+            name: data.name,
+            type: data.type,
+            cooldown: data.cooldown,
+        };
+    },
+    async findOneAndUpdate(filter, update, options = {}) {
+        const client = (0, supabase_1.getSupabaseClient)();
+        if (!client)
+            return null;
+        const id = filter._id;
+        const updateData = {};
+        if (update.cooldown !== undefined)
+            updateData.cooldown = update.cooldown;
+        if (update.name !== undefined)
+            updateData.name = update.name;
+        if (update.type !== undefined)
+            updateData.type = update.type;
+        if (update.$set) {
+            Object.assign(updateData, update.$set);
+        }
+        const { data, error } = await client
+            .from(TABLE_NAME)
+            .upsert({ id, ...updateData }, { onConflict: 'id' })
+            .select()
+            .single();
+        if (error) {
+            console.error('SpaceCommands > Error upserting cooldown:', error);
+            return null;
+        }
+        return {
+            _id: data.id,
+            name: data.name,
+            type: data.type,
+            cooldown: data.cooldown,
+        };
+    },
+    async deleteMany(filter) {
+        const client = (0, supabase_1.getSupabaseClient)();
+        if (!client)
+            return { deletedCount: 0 };
+        let query = client.from(TABLE_NAME).delete();
+        if (filter.cooldown?.$lte !== undefined) {
+            query = query.lte('cooldown', filter.cooldown.$lte);
+        }
+        const { error, count } = await query;
+        if (error) {
+            console.error('SpaceCommands > Error deleting cooldowns:', error);
+            return { deletedCount: 0 };
+        }
+        return { deletedCount: count || 0 };
+    },
+};

@@ -1,49 +1,93 @@
 "use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
-const mongoose_1 = __importStar(require("mongoose"));
-const reqString = {
-    type: String,
-    required: true,
-};
-const schema = new mongoose_1.Schema({
-    guildId: reqString,
-    command: reqString,
-    channels: {
-        type: [String],
-        required: true,
+Object.defineProperty(exports, "__esModule", { value: true });
+// @ts-nocheck
+const supabase_1 = require("../supabase");
+const TABLE_NAME = 'spacecommands_channel_commands';
+exports.default = {
+    async find(filter = {}) {
+        const client = (0, supabase_1.getSupabaseClient)();
+        if (!client)
+            return [];
+        let query = client.from(TABLE_NAME).select('*');
+        if (filter.guildId) {
+            query = query.eq('guild_id', filter.guildId);
+        }
+        if (filter.command) {
+            query = query.eq('command', filter.command);
+        }
+        const { data, error } = await query;
+        if (error) {
+            console.error('SpaceCommands > Error fetching channel commands:', error);
+            return [];
+        }
+        return (data || []).map((row) => ({
+            guildId: row.guild_id,
+            command: row.command,
+            channels: row.channels,
+        }));
     },
-});
-const name = 'spacecommands-channel-commands';
-module.exports = mongoose_1.default.models[name] || mongoose_1.default.model(name, schema, name);
+    async findOne(filter) {
+        const client = (0, supabase_1.getSupabaseClient)();
+        if (!client)
+            return null;
+        let query = client.from(TABLE_NAME).select('*');
+        if (filter.guildId) {
+            query = query.eq('guild_id', filter.guildId);
+        }
+        if (filter.command) {
+            query = query.eq('command', filter.command);
+        }
+        const { data, error } = await query.single();
+        if (error) {
+            if (error.code === 'PGRST116')
+                return null;
+            console.error('SpaceCommands > Error finding channel command:', error);
+            return null;
+        }
+        return {
+            guildId: data.guild_id,
+            command: data.command,
+            channels: data.channels,
+        };
+    },
+    async findOneAndUpdate(filter, update, options = {}) {
+        const client = (0, supabase_1.getSupabaseClient)();
+        if (!client)
+            return null;
+        const guildId = filter.guildId;
+        const command = filter.command || update.command || update.$set?.command;
+        const channels = update.channels || update.$set?.channels;
+        const { data, error } = await client
+            .from(TABLE_NAME)
+            .upsert({ guild_id: guildId, command, channels }, { onConflict: 'guild_id,command' })
+            .select()
+            .single();
+        if (error) {
+            console.error('SpaceCommands > Error upserting channel command:', error);
+            return null;
+        }
+        return {
+            guildId: data.guild_id,
+            command: data.command,
+            channels: data.channels,
+        };
+    },
+    async deleteOne(filter) {
+        const client = (0, supabase_1.getSupabaseClient)();
+        if (!client)
+            return { deletedCount: 0 };
+        let query = client.from(TABLE_NAME).delete();
+        if (filter.guildId) {
+            query = query.eq('guild_id', filter.guildId);
+        }
+        if (filter.command) {
+            query = query.eq('command', filter.command);
+        }
+        const { error } = await query;
+        if (error) {
+            console.error('SpaceCommands > Error deleting channel command:', error);
+            return { deletedCount: 0 };
+        }
+        return { deletedCount: 1 };
+    },
+};

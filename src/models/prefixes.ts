@@ -1,16 +1,97 @@
-import mongoose, { Schema } from 'mongoose'
+// @ts-nocheck
+import { getSupabaseClient } from '../supabase'
 
-const reqString = {
-  type: String,
-  required: true,
+const TABLE_NAME = 'spacecommands_prefixes'
+
+export default {
+  async find(filter: any = {}) {
+    const client = getSupabaseClient()
+    if (!client) return []
+
+    let query = client.from(TABLE_NAME).select('*')
+
+    // Apply filters if provided
+    if (filter._id) {
+      query = query.eq('guild_id', filter._id)
+    }
+
+    const { data, error } = await query
+
+    if (error) {
+      console.error('SpaceCommands > Error fetching prefixes:', error)
+      return []
+    }
+
+    // Transform to match Mongoose format
+    return (data || []).map((row) => ({
+      _id: row.guild_id,
+      prefix: row.prefix,
+    }))
+  },
+
+  async findOne(filter: any) {
+    const client = getSupabaseClient()
+    if (!client) return null
+
+    const { data, error } = await client
+      .from(TABLE_NAME)
+      .select('*')
+      .eq('guild_id', filter._id)
+      .single()
+
+    if (error) {
+      if (error.code === 'PGRST116') return null // No rows found
+      console.error('SpaceCommands > Error finding prefix:', error)
+      return null
+    }
+
+    return {
+      _id: data.guild_id,
+      prefix: data.prefix,
+    }
+  },
+
+  async findOneAndUpdate(filter: any, update: any, options: any = {}) {
+    const client = getSupabaseClient()
+    if (!client) return null
+
+    const guildId = filter._id
+    const prefix = update.prefix || update.$set?.prefix
+
+    const { data, error } = await client
+      .from(TABLE_NAME)
+      .upsert(
+        { guild_id: guildId, prefix },
+        { onConflict: 'guild_id' }
+      )
+      .select()
+      .single()
+
+    if (error) {
+      console.error('SpaceCommands > Error upserting prefix:', error)
+      return null
+    }
+
+    return {
+      _id: data.guild_id,
+      prefix: data.prefix,
+    }
+  },
+
+  async deleteOne(filter: any) {
+    const client = getSupabaseClient()
+    if (!client) return { deletedCount: 0 }
+
+    const { error } = await client
+      .from(TABLE_NAME)
+      .delete()
+      .eq('guild_id', filter._id)
+
+    if (error) {
+      console.error('SpaceCommands > Error deleting prefix:', error)
+      return { deletedCount: 0 }
+    }
+
+    return { deletedCount: 1 }
+  },
 }
-
-const schema = new Schema({
-  // Guild ID
-  _id: reqString,
-  prefix: reqString,
-})
-
-const name = 'spacecommands-prefixes'
-
-export = mongoose.models[name] || mongoose.model(name, schema, name)

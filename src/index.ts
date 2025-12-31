@@ -1,10 +1,10 @@
 // @ts-nocheck
 import { Client, ColorResolvable, Guild, GuildEmoji } from 'discord.js'
-import { Connection } from 'mongoose'
+import { SupabaseClient } from '@supabase/supabase-js'
 import { EventEmitter } from 'events'
 
 import FeatureHandler from './FeatureHandler'
-import mongo, { getMongoConnection } from './mongo'
+import supabase, { getSupabaseClient } from './supabase'
 import prefixes from './models/prefixes'
 import MessageHandler from './message-handler'
 import SlashCommands from './SlashCommands'
@@ -23,7 +23,7 @@ export default class SpaceCommands extends EventEmitter {
   private _defaultPrefix = '!'
   private _commandsDir = 'commands'
   private _featuresDir = ''
-  private _mongoConnection: Connection | null = null
+  private _supabaseClient: SupabaseClient | null = null
   private _displayName = ''
   private _prefixes: { [name: string]: string} = {}
   private _categories: Map<String, String | GuildEmoji> = new Map() // <Category Name, Emoji Icon>
@@ -71,7 +71,9 @@ export default class SpaceCommands extends EventEmitter {
       modalsDir,
       contextMenusDir,
       messagesPath,
-      mongoUri,
+      supabaseUrl,
+      supabaseKey,
+      mongoUri, // Deprecated - use supabaseUrl and supabaseKey instead
       showWarns = true,
       delErrMsgCooldown = -1,
       defaultLanguage = 'english',
@@ -85,10 +87,30 @@ export default class SpaceCommands extends EventEmitter {
       debug = false,
     } = options || {}
 
-    if (mongoUri) {
-      await mongo(mongoUri, this, dbOptions)
+    // Support for Supabase (recommended) or MongoDB (deprecated)
+    if (supabaseUrl && supabaseKey) {
+      this._supabaseClient = await supabase(supabaseUrl, supabaseKey, this)
 
-      this._mongoConnection = getMongoConnection()
+      // Load prefixes from Supabase
+      const results: any[] = await prefixes.find({})
+
+      for (const result of results) {
+        const { _id, prefix } = result
+
+        this._prefixes[_id] = prefix
+      }
+    } else if (mongoUri) {
+      // MongoDB support deprecated but still available
+      if (showWarns) {
+        console.warn(
+          'SpaceCommands > MongoDB support is deprecated. Please migrate to Supabase. See documentation for details.'
+        )
+      }
+
+      const mongo = await import('./mongo')
+      await mongo.default(mongoUri, this, dbOptions)
+
+      this._supabaseClient = null
 
       const results: any[] = await prefixes.find({})
 
@@ -100,7 +122,7 @@ export default class SpaceCommands extends EventEmitter {
     } else {
       if (showWarns) {
         console.warn(
-          'SpaceCommands > No MongoDB connection URI provided. Some features might not work!'
+          'SpaceCommands > No database connection provided. Some features might not work! Please provide supabaseUrl and supabaseKey.'
         )
       }
 
@@ -342,13 +364,17 @@ export default class SpaceCommands extends EventEmitter {
     return this._commandHandler!
   }
 
-  public get mongoConnection(): Connection | null {
-    return this._mongoConnection
+  public get supabaseClient(): SupabaseClient | null {
+    return this._supabaseClient
+  }
+
+  public get mongoConnection(): any | null {
+    // Deprecated: For backwards compatibility only
+    return this._supabaseClient
   }
 
   public isDBConnected(): boolean {
-    const connection = this.mongoConnection
-    return !!(connection && connection.readyState === 1)
+    return !!this._supabaseClient
   }
 
   public setTagPeople(tagPeople: boolean): SpaceCommands {
