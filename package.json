@@ -1,0 +1,47 @@
+{
+  "name": "spacecommands",
+  "version": "2.0.0",
+  "main": "dist/index.js",
+  "typings": "./typings.d.ts",
+  "scripts": {
+    "tsc": "tsc -w --outDir dist --rootDir src --skipLibCheck",
+    "compile": "tsc && node index.js",
+    "dev": "nodemon -e ts --exec \"npm run compile\"",
+    "build": "tsc",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "discord",
+    "discord.js",
+    "bot",
+    "command-handler",
+    "slash-commands",
+    "discord-bot",
+    "framework"
+  ],
+  "author": "SpaceCommands Contributors",
+  "license": "MIT",
+  "dependencies": {
+    "discord.js": "^14.25.1",
+    "dotenv": "^16.4.7",
+    "mongoose": "^8.10.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.7.2"
+  },
+  "description": "A modern, feature-rich Discord.js command handler with slash commands, permissions, cooldowns, and more",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/VicToMeyeZR/SpaceCommands"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "files": [
+    "dist",
+    "typings.d.ts",
+    "messages.json"
+  ]
+}
