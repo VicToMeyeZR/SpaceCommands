@@ -15,6 +15,15 @@ export = {
 
   cooldown: '2s',
 
+  options: [
+    {
+      name: 'language',
+      description: 'The language to set for this server',
+      type: 3, // STRING
+      required: false,
+    },
+  ],
+
   slash: 'both',
 
   callback: async (options: ICallbackObject) => {

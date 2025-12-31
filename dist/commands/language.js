@@ -13,6 +13,14 @@ module.exports = {
     maxArgs: 1,
     expectedArgs: '[language]',
     cooldown: '2s',
+    options: [
+        {
+            name: 'language',
+            description: 'The language to set for this server',
+            type: 3, // STRING
+            required: false,
+        },
+    ],
     slash: 'both',
     callback: async (options) => {
         const { channel, text, instance } = options;
