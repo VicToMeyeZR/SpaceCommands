@@ -94,7 +94,7 @@ class SlashCommands {
 
       // Handle command interactions
       this._client.on('interactionCreate', async (interaction) => {
-        if (!interaction.isCommand()) {
+        if (!interaction.isChatInputCommand()) {
           return
         }
 
@@ -216,8 +216,7 @@ class SlashCommands {
         optionsChanged
       ) {
         console.log(
-          `SpaceCommands > Updating${
-            guildId ? ' guild' : ''
+          `SpaceCommands > Updating${guildId ? ' guild' : ''
           } slash command "${name}"`
         )
 
@@ -233,8 +232,7 @@ class SlashCommands {
 
     if (commands) {
       console.log(
-        `SpaceCommands > Creating${
-          guildId ? ' guild' : ''
+        `SpaceCommands > Creating${guildId ? ' guild' : ''
         } slash command "${name}"`
       )
 
@@ -259,8 +257,7 @@ class SlashCommands {
       const cmd = commands.cache.get(commandId)
       if (cmd) {
         console.log(
-          `SpaceCommands > Deleting${guildId ? ' guild' : ''} slash command "${
-            cmd.name
+          `SpaceCommands > Deleting${guildId ? ' guild' : ''} slash command "${cmd.name
           }"`
         )
 
