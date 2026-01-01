@@ -14,6 +14,15 @@ export = {
   cooldown: '2s',
 
   slash: 'both',
+  options: [
+    {
+      name: 'prefix',
+      description: 'The new prefix',
+      // ApplicationCommandOptionType.String = 3
+      type: 3,
+      required: false,
+    },
+  ],
 
   callback: async (options: ICallbackObject) => {
     const { channel, args, text, instance } = options
