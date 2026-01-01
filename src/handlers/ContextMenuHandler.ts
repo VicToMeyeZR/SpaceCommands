@@ -4,6 +4,7 @@ import {
   UserContextMenuCommandInteraction,
   MessageContextMenuCommandInteraction,
   ContextMenuCommandBuilder,
+  MessageFlags,
 } from 'discord.js'
 import SpaceCommands from '..'
 import getAllFiles from '../get-all-files'
@@ -117,7 +118,7 @@ export default class ContextMenuHandler {
     ) {
       await interaction.reply({
         content: 'This command is only available to bot owners.',
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       })
       return
     }
@@ -126,7 +127,7 @@ export default class ContextMenuHandler {
     if (command.guildOnly && !interaction.guild) {
       await interaction.reply({
         content: 'This command can only be used in servers.',
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       })
       return
     }
@@ -141,7 +142,7 @@ export default class ContextMenuHandler {
       if (!hasPermission) {
         await interaction.reply({
           content: 'You do not have permission to use this command.',
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
         })
         return
       }
@@ -158,7 +159,7 @@ export default class ContextMenuHandler {
       if (!interaction.replied && !interaction.deferred) {
         await interaction.reply({
           content: 'An error occurred while executing this command.',
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
         })
       }
     }
