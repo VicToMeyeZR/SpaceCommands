@@ -69,7 +69,7 @@ class ContextMenuHandler {
             !this._instance.botOwner.includes(interaction.user.id)) {
             await interaction.reply({
                 content: 'This command is only available to bot owners.',
-                ephemeral: true,
+                flags: discord_js_1.MessageFlags.Ephemeral,
             });
             return;
         }
@@ -77,7 +77,7 @@ class ContextMenuHandler {
         if (command.guildOnly && !interaction.guild) {
             await interaction.reply({
                 content: 'This command can only be used in servers.',
-                ephemeral: true,
+                flags: discord_js_1.MessageFlags.Ephemeral,
             });
             return;
         }
@@ -88,7 +88,7 @@ class ContextMenuHandler {
             if (!hasPermission) {
                 await interaction.reply({
                     content: 'You do not have permission to use this command.',
-                    ephemeral: true,
+                    flags: discord_js_1.MessageFlags.Ephemeral,
                 });
                 return;
             }
@@ -101,7 +101,7 @@ class ContextMenuHandler {
             if (!interaction.replied && !interaction.deferred) {
                 await interaction.reply({
                     content: 'An error occurred while executing this command.',
-                    ephemeral: true,
+                    flags: discord_js_1.MessageFlags.Ephemeral,
                 });
             }
         }
