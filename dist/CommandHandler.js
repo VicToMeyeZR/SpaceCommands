@@ -52,6 +52,9 @@ class CommandHandler {
             if (disabledDefaultCommands.includes(fileName)) {
                 continue;
             }
+            if (instance.debug) {
+                console.log(`SpaceCommands > Registering internal command: ${fileName}`);
+            }
             await this.registerCommand(instance, client, file, fileName, true);
         }
         // Do not pass in TS here because this should always compiled to JS
