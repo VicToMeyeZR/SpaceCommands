@@ -11,6 +11,7 @@ module.exports = {
     aliases: ['mylang'],
     maxArgs: 1,
     expectedArgs: '[language]',
+    testOnly: true,
     cooldown: '2s',
     options: [
         {
