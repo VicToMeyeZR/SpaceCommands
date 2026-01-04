@@ -99,6 +99,9 @@ export default class CommandHandler {
       )
 
       for (const [file, fileName] of files) {
+        if (instance.debug) {
+          console.log(`SpaceCommands > Registering command file: ${fileName}`)
+        }
         await this.registerCommand(instance, client, file, fileName)
       }
 
