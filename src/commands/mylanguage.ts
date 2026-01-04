@@ -12,6 +12,8 @@ export = {
     maxArgs: 1,
     expectedArgs: '[language]',
 
+    testOnly: true,
+
     cooldown: '2s',
 
     options: [

@@ -1,6 +1,6 @@
 {
   "name": "spacecommands",
-  "version": "3.2.3",
+  "version": "3.2.4",
   "main": "dist/index.js",
   "types": "./typings.d.ts",
   "typings": "./typings.d.ts",
