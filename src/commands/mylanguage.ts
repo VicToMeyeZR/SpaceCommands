@@ -58,20 +58,7 @@ export = {
             }, user)
         }
 
-        instance.messageHandler.setUserLanguage(user, lang)
-
-        await userLanguageSchema.findOneAndUpdate(
-            {
-                _id: user.id,
-            },
-            {
-                _id: user.id,
-                language: lang,
-            },
-            {
-                upsert: true,
-            }
-        )
+        await instance.messageHandler.setUserLanguage(user, lang)
 
         return instance.messageHandler.get(guild, 'NEW_LANGUAGE', {
             LANGUAGE: lang,

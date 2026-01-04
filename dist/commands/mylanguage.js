@@ -2,8 +2,6 @@
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
-// @ts-nocheck
-const user_languages_1 = __importDefault(require("../models/user-languages"));
 const Events_1 = __importDefault(require("../enums/Events"));
 module.exports = {
     description: 'Displays or sets your personal language preference',
@@ -45,15 +43,7 @@ module.exports = {
                 LANGUAGE: lang,
             }, user);
         }
-        instance.messageHandler.setUserLanguage(user, lang);
-        await user_languages_1.default.findOneAndUpdate({
-            _id: user.id,
-        }, {
-            _id: user.id,
-            language: lang,
-        }, {
-            upsert: true,
-        });
+        await instance.messageHandler.setUserLanguage(user, lang);
         return instance.messageHandler.get(guild, 'NEW_LANGUAGE', {
             LANGUAGE: lang,
         }, user);

@@ -64,6 +64,21 @@ export default class MessageHandler {
 
   public async setUserLanguage(user: User, language: string) {
     this._userLanguages.set(user.id, language)
+
+    if (this._instance.isDBConnected()) {
+      await userLanguageSchema.findOneAndUpdate(
+        {
+          _id: user.id,
+        },
+        {
+          _id: user.id,
+          language,
+        },
+        {
+          upsert: true,
+        }
+      )
+    }
   }
 
   public getLanguage(guild: Guild | null, user?: User | null): string {
