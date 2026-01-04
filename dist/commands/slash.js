@@ -6,6 +6,7 @@ module.exports = {
     permissions: ['Administrator'],
     maxArgs: 1,
     expectedArgs: '[command-id]',
+    guildOnly: true,
     ownerOnly: true,
     hidden: true,
     slash: 'both',

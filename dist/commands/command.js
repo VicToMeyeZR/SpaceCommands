@@ -12,6 +12,7 @@ module.exports = {
     maxArgs: 2,
     expectedArgs: '<"enable" or "disable"> <Command Name>',
     cooldown: '2s',
+    guildOnly: true,
     slash: 'both',
     options: [
         {
