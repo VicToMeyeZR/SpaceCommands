@@ -8,6 +8,9 @@ module.exports = async (guild, command, instance, member, user, reply) => {
     if (guild && instance.premiumServers.includes(guild.id)) {
         return true;
     }
+    else if (guild) {
+        console.log(`[EntitlementCheck] Guild ${guild.id} NOT in premium list:`, instance.premiumServers);
+    }
     const entitlementHandler = instance.entitlementHandler;
     if (!entitlementHandler) {
         console.warn('SpaceCommands > Command requires entitlements but EntitlementHandler is not initialized.');

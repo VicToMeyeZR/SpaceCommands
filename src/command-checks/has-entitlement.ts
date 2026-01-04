@@ -19,6 +19,8 @@ export = async (
 
   if (guild && instance.premiumServers.includes(guild.id)) {
     return true
+  } else if (guild) {
+    console.log(`[EntitlementCheck] Guild ${guild.id} NOT in premium list:`, instance.premiumServers);
   }
 
   const entitlementHandler = instance.entitlementHandler
