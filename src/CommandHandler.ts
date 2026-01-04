@@ -76,6 +76,10 @@ export default class CommandHandler {
         continue
       }
 
+      if (instance.debug) {
+        console.log(`SpaceCommands > Registering internal command: ${fileName}`)
+      }
+
       await this.registerCommand(instance, client, file, fileName, true)
     }
 
