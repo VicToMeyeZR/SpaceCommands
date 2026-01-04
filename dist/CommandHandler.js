@@ -66,6 +66,9 @@ class CommandHandler {
             const amount = files.length;
             console.log(`SpaceCommands > Loaded ${amount} command${amount === 1 ? '' : 's'}.`);
             for (const [file, fileName] of files) {
+                if (instance.debug) {
+                    console.log(`SpaceCommands > Registering command file: ${fileName}`);
+                }
                 await this.registerCommand(instance, client, file, fileName);
             }
             if (instance.isDBConnected()) {
