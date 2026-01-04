@@ -137,7 +137,7 @@ class CommandHandler {
                         });
                     }
                     else {
-                        message.reply(instance.messageHandler.get(guild, 'EXCEPTION'));
+                        message.reply(instance.messageHandler.get(guild, 'EXCEPTION', {}, message.author));
                         console.error(e);
                     }
                     instance.emit(Events_1.default.COMMAND_EXCEPTION, command, message, e);

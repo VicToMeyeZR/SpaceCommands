@@ -55,6 +55,7 @@ client.on('ready', () => {
     featuresDir: path.join(__dirname, 'features'),
     testServers: ['YOUR_TEST_SERVER_ID'],
     botOwners: ['YOUR_USER_ID'],
+    premiumServers: ['YOUR_PREMIUM_SERVER_ID'],
     // Database (optional - Supabase recommended)
     supabaseUrl: process.env.SUPABASE_URL,
     supabaseKey: process.env.SUPABASE_KEY,
@@ -66,7 +67,7 @@ client.login(process.env.BOT_TOKEN);
 
 ## Supabase Setup (Recommended)
 
-SpaceCommands now uses Supabase for data persistence instead of MongoDB. Here's how to set it up:
+SpaceCommands uses Supabase for data persistence. Here's how to set it up:
 
 ### 1. Create a Supabase Project
 

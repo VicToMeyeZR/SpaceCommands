@@ -80,6 +80,17 @@ class EntitlementHandler {
         };
     }
     /**
+     * Check if a guild has any of the specified entitlements
+     */
+    async hasAnyGuildEntitlement(guildId, skuIds) {
+        const entitlements = await this.getGuildEntitlements(guildId);
+        const entitlement = entitlements.find((e) => skuIds.includes(e.skuId));
+        return {
+            hasEntitlement: !!entitlement,
+            entitlement,
+        };
+    }
+    /**
      * Check if a user has all of the specified entitlements
      */
     async hasAllEntitlements(userId, skuIds) {

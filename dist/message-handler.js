@@ -37,10 +37,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const languages_1 = __importDefault(require("./models/languages"));
+const user_languages_1 = __importDefault(require("./models/user-languages"));
 const defualtMessages = require('../messages.json');
 class MessageHandler {
     _instance;
     _guildLanguages = new Map(); // <Guild ID, Language>
+    _userLanguages = new Map(); // <User ID, Language>
     _languages = [];
     _messages = {};
     constructor(instance, messagePath) {
@@ -61,6 +63,11 @@ class MessageHandler {
                 for (const { _id: guildId, language } of results) {
                     this._guildLanguages.set(guildId, language);
                 }
+                const userResults = await user_languages_1.default.find();
+                // @ts-ignore
+                for (const { _id: userId, language } of userResults) {
+                    this._userLanguages.set(userId, language);
+                }
             }
         })();
     }
@@ -72,7 +79,16 @@ class MessageHandler {
             this._guildLanguages.set(guild.id, language);
         }
     }
-    getLanguage(guild) {
+    async setUserLanguage(user, language) {
+        this._userLanguages.set(user.id, language);
+    }
+    getLanguage(guild, user) {
+        if (user) {
+            const userLang = this._userLanguages.get(user.id);
+            if (userLang) {
+                return userLang;
+            }
+        }
         if (guild) {
             const result = this._guildLanguages.get(guild.id);
             if (result) {
@@ -81,8 +97,8 @@ class MessageHandler {
         }
         return this._instance.defaultLanguage;
     }
-    get(guild, messageId, args = {}) {
-        const language = this.getLanguage(guild);
+    get(guild, messageId, args = {}, user) {
+        const language = this.getLanguage(guild, user);
         const translations = this._messages[messageId];
         if (!translations) {
             console.error(`SpaceCommands > Could not find the correct message to send for "${messageId}"`);
@@ -91,12 +107,12 @@ class MessageHandler {
         let result = translations[language];
         for (const key of Object.keys(args)) {
             const expression = new RegExp(`{${key}}`, 'g');
-            result = result.replace(expression, args[key]);
+            result = result?.replace(expression, args[key]);
         }
         return result;
     }
-    getEmbed(guild, embedId, itemId, args = {}) {
-        const language = this.getLanguage(guild);
+    getEmbed(guild, embedId, itemId, args = {}, user) {
+        const language = this.getLanguage(guild, user);
         const items = this._messages[embedId];
         if (!items) {
             console.error(`SpaceCommands > Could not find the correct item to send for "${embedId}" -> "${itemId}"`);

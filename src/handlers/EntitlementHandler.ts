@@ -130,6 +130,22 @@ export default class EntitlementHandler {
   }
 
   /**
+   * Check if a guild has any of the specified entitlements
+   */
+  public async hasAnyGuildEntitlement(
+    guildId: Snowflake,
+    skuIds: string[]
+  ): Promise<IEntitlementCheck> {
+    const entitlements = await this.getGuildEntitlements(guildId)
+    const entitlement = entitlements.find((e) => skuIds.includes(e.skuId))
+
+    return {
+      hasEntitlement: !!entitlement,
+      entitlement,
+    }
+  }
+
+  /**
    * Check if a user has all of the specified entitlements
    */
   public async hasAllEntitlements(

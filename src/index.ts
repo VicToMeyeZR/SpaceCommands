@@ -37,6 +37,7 @@ export default class SpaceCommands extends EventEmitter {
   private _ignoreBots = true
   private _botOwner: string[] = []
   private _testServers: string[] = []
+  private _premiumServers: string[] = []
   private _defaultLanguage = 'english'
   private _ephemeral = true
   private _debug = false
@@ -144,6 +145,13 @@ export default class SpaceCommands extends EventEmitter {
         botOwners = [botOwners]
       }
       this._botOwner = botOwners
+    }
+
+    if (options.premiumServers) {
+      if (typeof options.premiumServers === 'string') {
+        options.premiumServers = [options.premiumServers]
+      }
+      this._premiumServers = options.premiumServers
     }
 
     this._showWarns = showWarns
@@ -396,6 +404,10 @@ export default class SpaceCommands extends EventEmitter {
 
   public get testServers(): string[] {
     return this._testServers
+  }
+
+  public get premiumServers(): string[] {
+    return this._premiumServers
   }
 
   public get defaultLanguage(): string {

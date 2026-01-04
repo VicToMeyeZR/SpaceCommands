@@ -200,7 +200,7 @@ export default class CommandHandler {
               },
             })
           } else {
-            message.reply(instance.messageHandler.get(guild, 'EXCEPTION'))
+            message.reply(instance.messageHandler.get(guild, 'EXCEPTION', {}, message.author))
             console.error(e)
           }
 

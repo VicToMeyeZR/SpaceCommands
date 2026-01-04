@@ -1,7 +1,8 @@
 // @ts-nocheck
-import { Guild } from 'discord.js'
+import { Guild, User } from 'discord.js'
 
 import languageSchema from './models/languages'
+import userLanguageSchema from './models/user-languages'
 import SpaceCommands from '.'
 import Events from './enums/Events'
 const defualtMessages = require('../messages.json')
@@ -9,6 +10,7 @@ const defualtMessages = require('../messages.json')
 export default class MessageHandler {
   private _instance: SpaceCommands
   private _guildLanguages: Map<string, string> = new Map() // <Guild ID, Language>
+  private _userLanguages: Map<string, string> = new Map() // <User ID, Language>
   private _languages: string[] = []
   private _messages: {
     [key: string]: {
@@ -18,30 +20,36 @@ export default class MessageHandler {
 
   constructor(instance: SpaceCommands, messagePath: string) {
     this._instance = instance
-    ;(async () => {
-      this._messages = messagePath ? await import(messagePath) : defualtMessages
+      ; (async () => {
+        this._messages = messagePath ? await import(messagePath) : defualtMessages
 
-      for (const messageId of Object.keys(this._messages)) {
-        for (const language of Object.keys(this._messages[messageId])) {
-          this._languages.push(language.toLowerCase())
+        for (const messageId of Object.keys(this._messages)) {
+          for (const language of Object.keys(this._messages[messageId])) {
+            this._languages.push(language.toLowerCase())
+          }
         }
-      }
 
-      if (!this._languages.includes(instance.defaultLanguage)) {
-        throw new Error(
-          `The current default language defined is not supported.`
-        )
-      }
-
-      if (instance.isDBConnected()) {
-        const results = await languageSchema.find()
-
-        // @ts-ignore
-        for (const { _id: guildId, language } of results) {
-          this._guildLanguages.set(guildId, language)
+        if (!this._languages.includes(instance.defaultLanguage)) {
+          throw new Error(
+            `The current default language defined is not supported.`
+          )
         }
-      }
-    })()
+
+        if (instance.isDBConnected()) {
+          const results = await languageSchema.find()
+
+          // @ts-ignore
+          for (const { _id: guildId, language } of results) {
+            this._guildLanguages.set(guildId, language)
+          }
+
+          const userResults = await userLanguageSchema.find()
+          // @ts-ignore
+          for (const { _id: userId, language } of userResults) {
+            this._userLanguages.set(userId, language)
+          }
+        }
+      })()
   }
 
   public languages(): string[] {
@@ -54,7 +62,18 @@ export default class MessageHandler {
     }
   }
 
-  public getLanguage(guild: Guild | null): string {
+  public async setUserLanguage(user: User, language: string) {
+    this._userLanguages.set(user.id, language)
+  }
+
+  public getLanguage(guild: Guild | null, user?: User | null): string {
+    if (user) {
+      const userLang = this._userLanguages.get(user.id)
+      if (userLang) {
+        return userLang
+      }
+    }
+
     if (guild) {
       const result = this._guildLanguages.get(guild.id)
       if (result) {
@@ -67,9 +86,10 @@ export default class MessageHandler {
   get(
     guild: Guild | null,
     messageId: string,
-    args: { [key: string]: string } = {}
+    args: { [key: string]: string } = {},
+    user?: User | null
   ): string {
-    const language = this.getLanguage(guild)
+    const language = this.getLanguage(guild, user)
 
     const translations = this._messages[messageId]
     if (!translations) {
@@ -83,7 +103,7 @@ export default class MessageHandler {
 
     for (const key of Object.keys(args)) {
       const expression = new RegExp(`{${key}}`, 'g')
-      result = result.replace(expression, args[key])
+      result = result?.replace(expression, args[key])
     }
 
     return result
@@ -93,9 +113,10 @@ export default class MessageHandler {
     guild: Guild | null,
     embedId: string,
     itemId: string,
-    args: { [key: string]: string } = {}
+    args: { [key: string]: string } = {},
+    user?: User | null
   ): string {
-    const language = this.getLanguage(guild)
+    const language = this.getLanguage(guild, user)
 
     const items = this._messages[embedId]
     if (!items) {

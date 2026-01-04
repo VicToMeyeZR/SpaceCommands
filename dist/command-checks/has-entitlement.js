@@ -5,6 +5,9 @@ module.exports = async (guild, command, instance, member, user, reply) => {
     if (!requiredEntitlements.length && !premiumOnly) {
         return true;
     }
+    if (guild && instance.premiumServers.includes(guild.id)) {
+        return true;
+    }
     const entitlementHandler = instance.entitlementHandler;
     if (!entitlementHandler) {
         console.warn('SpaceCommands > Command requires entitlements but EntitlementHandler is not initialized.');
@@ -13,7 +16,12 @@ module.exports = async (guild, command, instance, member, user, reply) => {
     // Check if user has required entitlements
     if (requiredEntitlements.length > 0) {
         const { hasEntitlement } = await entitlementHandler.hasAnyEntitlement(user.id, requiredEntitlements);
-        if (!hasEntitlement) {
+        let hasAccess = hasEntitlement;
+        if (!hasAccess && guild) {
+            const { hasEntitlement: hasGuildEntitlement } = await entitlementHandler.hasAnyGuildEntitlement(guild.id, requiredEntitlements);
+            hasAccess = hasGuildEntitlement;
+        }
+        if (!hasAccess) {
             reply(instance.messageHandler.get(guild, 'MISSING_ENTITLEMENT') ||
                 'You need a premium subscription to use this command.').then((message) => {
                 if (!message) {
@@ -32,7 +40,12 @@ module.exports = async (guild, command, instance, member, user, reply) => {
     // If premiumOnly is set, check for any active entitlement
     if (premiumOnly) {
         const allEntitlements = await entitlementHandler.getUserEntitlements(user.id);
-        if (allEntitlements.length === 0) {
+        let hasPremium = allEntitlements.length > 0;
+        if (!hasPremium && guild) {
+            const guildEntitlements = await entitlementHandler.getGuildEntitlements(guild.id);
+            hasPremium = guildEntitlements.length > 0;
+        }
+        if (!hasPremium) {
             reply(instance.messageHandler.get(guild, 'PREMIUM_ONLY') ||
                 'This command is only available to premium subscribers.').then((message) => {
                 if (!message) {

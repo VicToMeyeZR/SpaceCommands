@@ -17,6 +17,10 @@ export = async (
     return true
   }
 
+  if (guild && instance.premiumServers.includes(guild.id)) {
+    return true
+  }
+
   const entitlementHandler = instance.entitlementHandler
 
   if (!entitlementHandler) {
@@ -33,10 +37,20 @@ export = async (
       requiredEntitlements
     )
 
-    if (!hasEntitlement) {
+    let hasAccess = hasEntitlement
+
+    if (!hasAccess && guild) {
+      const { hasEntitlement: hasGuildEntitlement } = await entitlementHandler.hasAnyGuildEntitlement(
+        guild.id,
+        requiredEntitlements
+      )
+      hasAccess = hasGuildEntitlement
+    }
+
+    if (!hasAccess) {
       reply(
         instance.messageHandler.get(guild, 'MISSING_ENTITLEMENT') ||
-          'You need a premium subscription to use this command.'
+        'You need a premium subscription to use this command.'
       ).then((message: Message | null) => {
         if (!message) {
           return
@@ -58,11 +72,17 @@ export = async (
   // If premiumOnly is set, check for any active entitlement
   if (premiumOnly) {
     const allEntitlements = await entitlementHandler.getUserEntitlements(user.id)
+    let hasPremium = allEntitlements.length > 0
 
-    if (allEntitlements.length === 0) {
+    if (!hasPremium && guild) {
+      const guildEntitlements = await entitlementHandler.getGuildEntitlements(guild.id)
+      hasPremium = guildEntitlements.length > 0
+    }
+
+    if (!hasPremium) {
       reply(
         instance.messageHandler.get(guild, 'PREMIUM_ONLY') ||
-          'This command is only available to premium subscribers.'
+        'This command is only available to premium subscribers.'
       ).then((message: Message | null) => {
         if (!message) {
           return

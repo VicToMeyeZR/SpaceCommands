@@ -29,7 +29,7 @@ export = (
         reply(
           instance.messageHandler.get(guild, 'MISSING_PERMISSION', {
             PERM: perm,
-          })
+          }, user)
         ).then((message: Message | null) => {
           if (!message) {
             return

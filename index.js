@@ -1,3 +1,3 @@
-import SpaceCommands from './src'
+const SpaceCommands = require('./dist/index.js')
 
-export default SpaceCommands
+module.exports = SpaceCommands

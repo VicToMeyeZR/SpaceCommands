@@ -72,7 +72,7 @@ class SlashCommands {
                 const command = this._instance.commandHandler.getCommand(commandName);
                 if (!command) {
                     interaction.reply({
-                        content: this._instance.messageHandler.get(guild, 'INVALID_SLASH_COMMAND'),
+                        content: this._instance.messageHandler.get(guild, 'INVALID_SLASH_COMMAND', {}, interaction.user),
                         ephemeral: this._instance.ephemeral,
                     });
                     return;

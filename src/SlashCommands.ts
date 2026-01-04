@@ -107,7 +107,9 @@ class SlashCommands {
           interaction.reply({
             content: this._instance.messageHandler.get(
               guild,
-              'INVALID_SLASH_COMMAND'
+              'INVALID_SLASH_COMMAND',
+              {},
+              interaction.user
             ),
             ephemeral: this._instance.ephemeral,
           })

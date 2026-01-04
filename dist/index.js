@@ -36,6 +36,7 @@ class SpaceCommands extends events_1.EventEmitter {
     _ignoreBots = true;
     _botOwner = [];
     _testServers = [];
+    _premiumServers = [];
     _defaultLanguage = 'english';
     _ephemeral = true;
     _debug = false;
@@ -97,6 +98,12 @@ class SpaceCommands extends events_1.EventEmitter {
                 botOwners = [botOwners];
             }
             this._botOwner = botOwners;
+        }
+        if (options.premiumServers) {
+            if (typeof options.premiumServers === 'string') {
+                options.premiumServers = [options.premiumServers];
+            }
+            this._premiumServers = options.premiumServers;
         }
         this._showWarns = showWarns;
         this._delErrMsgCooldown = delErrMsgCooldown;
@@ -268,6 +275,9 @@ class SpaceCommands extends events_1.EventEmitter {
     }
     get testServers() {
         return this._testServers;
+    }
+    get premiumServers() {
+        return this._premiumServers;
     }
     get defaultLanguage() {
         return this._defaultLanguage;
