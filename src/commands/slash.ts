@@ -9,7 +9,7 @@ export = {
 
   maxArgs: 1,
   expectedArgs: '[command-id]',
-
+  guildOnly: true,
   ownerOnly: true,
   hidden: true,
 
@@ -33,7 +33,7 @@ export = {
             throw new Error('')
           }
         })
-      } catch (ignored) {}
+      } catch (ignored) { }
 
       slashCommands.delete(text, useGuild ? guild.id : undefined)
 

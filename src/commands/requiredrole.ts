@@ -12,7 +12,7 @@ export = {
   minArgs: 2,
   maxArgs: 2,
   expectedArgs: '<command> <none-or-roleid>',
-
+  guildOnly: true,
   cooldown: '2s',
 
   slash: 'both',

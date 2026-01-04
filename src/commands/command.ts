@@ -13,7 +13,7 @@ export = {
   expectedArgs: '<"enable" or "disable"> <Command Name>',
 
   cooldown: '2s',
-
+  guildOnly: true,
   slash: 'both',
 
   options: [

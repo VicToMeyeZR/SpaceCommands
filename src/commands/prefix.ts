@@ -12,7 +12,7 @@ export = {
   expectedArgs: '[prefix]',
 
   cooldown: '2s',
-
+  guildOnly: true,
   slash: 'both',
   options: [
     {
