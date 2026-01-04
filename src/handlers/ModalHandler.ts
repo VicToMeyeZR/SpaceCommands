@@ -50,7 +50,7 @@ export default class ModalHandler {
       const handler = require(file)
       const config = handler.default || handler
 
-      if (config.type === 'modal') {
+      if (config.type === 'modal' || (config.customId && config.callback)) {
         this.registerModalHandler(config)
       }
     }
