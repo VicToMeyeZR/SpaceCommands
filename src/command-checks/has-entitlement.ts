@@ -29,8 +29,12 @@ export = async (
 
   if (guild && instance.premiumServers.includes(guild.id)) {
     return true
-  } else if (guild) {
-    console.log(`[EntitlementCheck] Guild ${guild.id} NOT in premium list:`, instance.premiumServers);
+  } else if (guild && instance.debug) {
+    // Debug-gated: this runs on EVERY entitlement check for every guild outside the
+    // premium list, so ungated it logs on each paid-command invocation in production
+    // and reprints the whole premium-server list each time. `instance.debug` is how
+    // CommandHandler gates its own diagnostics.
+    console.log(`[EntitlementCheck] Guild ${guild.id} NOT in premium list:`, instance.premiumServers)
   }
 
   const entitlementHandler = instance.entitlementHandler
