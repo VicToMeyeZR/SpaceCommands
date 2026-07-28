@@ -35,8 +35,10 @@ this release that 3.7.2 on npm does not already have.
 - **`models/required-roles` ignored `$addToSet`**, so every add-required-role wrote
   `undefined` over the existing list.
 - **The entitlement check logged on every invocation.** `has-entitlement` printed the
-  full `premiumServers` array for each check against a non-premium guild. Now gated
-  behind `instance.debug`.
+  full `premiumServers` array for each check against a non-premium guild — once per
+  paid-command invocation, publishing the configured premium guild ids into consumer
+  logs. Removed outright rather than gated behind `instance.debug`, since consumers run
+  with debug enabled and gating would have left it effectively unconditional.
 
 ### Added
 - `premiumServers` option and getter, with a matching bypass in the entitlement check.
