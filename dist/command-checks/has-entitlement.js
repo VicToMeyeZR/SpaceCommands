@@ -13,15 +13,15 @@ module.exports = async (guild, command, instance, member, user, reply) => {
     if (!requiredEntitlements.length && !premiumOnly) {
         return true;
     }
+    // Deliberately silent on the miss. This runs for EVERY entitlement check against a
+    // guild outside premiumServers — i.e. once per paid-command invocation — and the log
+    // that used to live here reprinted the whole premiumServers array each time. Gating it
+    // behind `instance.debug` was not enough: consumers run with debug enabled (StarBot
+    // sets `debug: true`), so it stayed effectively unconditional in production and
+    // published the configured premium guild ids into their logs. A caller that wants this
+    // can log it at its own call site, where it fires once rather than per command.
     if (guild && instance.premiumServers.includes(guild.id)) {
         return true;
-    }
-    else if (guild && instance.debug) {
-        // Debug-gated: this runs on EVERY entitlement check for every guild outside the
-        // premium list, so ungated it logs on each paid-command invocation in production
-        // and reprints the whole premium-server list each time. `instance.debug` is how
-        // CommandHandler gates its own diagnostics.
-        console.log(`[EntitlementCheck] Guild ${guild.id} NOT in premium list:`, instance.premiumServers);
     }
     const entitlementHandler = instance.entitlementHandler;
     if (!entitlementHandler) {
