@@ -5,6 +5,52 @@ All notable changes to SpaceCommands will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.8.0] - 2026-07-28
+
+### Note on versioning
+
+This changelog jumps from 2.0.0 to 3.8.0. Versions 3.0.0 through 3.7.2 were published
+to npm without changelog entries, and 3.5.0-3.7.2 were published from source that was
+never committed here — `models/commands`, `models/message` and `models/premium-overrides`
+existed only inside the published tarball. This release reconciles the two, so the repo
+and the package describe the same library again. The entries below cover everything in
+this release that 3.7.2 on npm does not already have.
+
+### Fixed
+- **`permissionList` no longer rejects modern permissions.** It was a hand-written array
+  ending at `ManageEmojisAndStickers` (31 names), and `CommandHandler` throws on any
+  permission absent from it — at command load, taking the bot down. That rejected 22
+  permissions Discord has added since, including `ManageEvents`, `CreateEvents`,
+  `ModerateMembers`, `UseApplicationCommands`, `ManageThreads`, `SendPolls` and
+  `BypassSlowmode`. Because the thrown error names the permission, it read as though
+  discord.js lacked the flag. Now derived from `PermissionFlagsBits`, so a discord.js
+  upgrade keeps it current instead of letting it rot.
+- **`/requiredrole <command> none` wiped required roles for the entire guild.**
+  `models/required-roles.deleteOne` filtered on `filter.command`, but its only caller
+  passes `{ guildId, commandId }`, so the filter was never applied and the delete ran
+  with the guild filter alone — clearing every command's rows while replying that it had
+  cleared only the named command. Role-gated commands silently lost their gates.
+- **`models/cooldown` was missing `deleteOne`**, which `Command` already called. Any code
+  path reaching it threw.
+- **`models/required-roles` ignored `$addToSet`**, so every add-required-role wrote
+  `undefined` over the existing list.
+- **The entitlement check logged on every invocation.** `has-entitlement` printed the
+  full `premiumServers` array for each check against a non-premium guild. Now gated
+  behind `instance.debug`.
+
+### Added
+- `premiumServers` option and getter, with a matching bypass in the entitlement check.
+- `hasAnyGuildEntitlement(guildId, skuIds)` for real per-guild Discord SKU entitlements,
+  distinct from manual overrides.
+- `delete_command` built-in command.
+- `guildOnly` on the `prefix`, `command`, `slash` and `requiredrole` built-ins.
+- Per-user language resolution: `messageHandler.get()` calls now pass the invoking user,
+  so replies use that user's language rather than only the guild's.
+
+### Changed
+- The tracked `dist/` is rebuilt from source. It had drifted behind `src/`, so git
+  installs received none of the above.
+
 ## [2.0.0] - 2025-12-31
 
 ### Added
