@@ -1,38 +1,22 @@
-import { PermissionsBitField } from 'discord.js'
+import { PermissionFlagsBits, PermissionsBitField } from 'discord.js'
 
-const permissionList = [
-  'CreateInstantInvite',
-  'KickMembers',
-  'BanMembers',
-  'Administrator',
-  'ManageChannels',
-  'ManageGuild',
-  'AddReactions',
-  'ViewAuditLog',
-  'PrioritySpeaker',
-  'Stream',
-  'ViewChannel',
-  'SendMessages',
-  'SendTTSMessages',
-  'ManageMessages',
-  'EmbedLinks',
-  'AttachFiles',
-  'ReadMessageHistory',
-  'MentionEveryone',
-  'UseExternalEmojis',
-  'ViewGuildInsights',
-  'Connect',
-  'Speak',
-  'MuteMembers',
-  'DeafenMembers',
-  'MoveMembers',
-  'UseVAD',
-  'ChangeNickname',
-  'ManageNicknames',
-  'ManageRoles',
-  'ManageWebhooks',
-  'ManageEmojisAndStickers',
-]
+/**
+ * Every permission discord.js knows about, derived rather than hand-listed.
+ *
+ * The list this replaces was written by hand and stopped at
+ * `ManageEmojisAndStickers` — 31 entries. Everything Discord added after it was
+ * rejected at command load with "invalid permission node", even though discord.js
+ * defined the flag: `ManageEvents`, `CreateEvents`, `ModerateMembers`,
+ * `UseApplicationCommands`, `ManageThreads`, and the rest. A bot declaring
+ * `permissions: ['ManageEvents']` crashed on load, and the error message blamed
+ * the permission rather than this list.
+ *
+ * Deriving from `PermissionFlagsBits` means the list cannot fall behind again: a
+ * discord.js upgrade brings new permissions with it. The names are exactly the
+ * keys `member.permissions.has()` accepts, which is what has-permissions.ts
+ * passes them to.
+ */
+const permissionList = Object.keys(PermissionFlagsBits)
 
 export { permissionList, PermissionsBitField }
 
