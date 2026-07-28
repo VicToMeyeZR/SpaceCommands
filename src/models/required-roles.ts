@@ -13,8 +13,8 @@ export default {
     if (filter.guildId) {
       query = query.eq('guild_id', filter.guildId)
     }
-    if (filter.command) {
-      query = query.eq('command', filter.command)
+    if (filter.commandId) {
+      query = query.eq('command_id', filter.commandId)
     }
 
     const { data, error } = await query
@@ -26,7 +26,7 @@ export default {
 
     return (data || []).map((row) => ({
       guildId: row.guild_id,
-      command: row.command,
+      commandId: row.command_id,
       requiredRoles: row.required_roles,
     }))
   },
@@ -40,8 +40,8 @@ export default {
     if (filter.guildId) {
       query = query.eq('guild_id', filter.guildId)
     }
-    if (filter.command) {
-      query = query.eq('command', filter.command)
+    if (filter.commandId) {
+      query = query.eq('command_id', filter.commandId)
     }
 
     const { data, error } = await query.single()
@@ -54,7 +54,7 @@ export default {
 
     return {
       guildId: data.guild_id,
-      command: data.command,
+      commandId: data.command_id,
       requiredRoles: data.required_roles,
     }
   },
@@ -64,14 +64,37 @@ export default {
     if (!client) return null
 
     const guildId = filter.guildId
-    const command = filter.command || update.command || update.$set?.command
-    const requiredRoles = update.requiredRoles || update.$set?.requiredRoles
+    const commandId = filter.commandId || update.commandId || update.$set?.commandId
+    let requiredRoles = update.requiredRoles || update.$set?.requiredRoles
+
+    // Handle $addToSet (used by requiredrole command)
+    if (update.$addToSet && update.$addToSet.requiredRoles) {
+      const roleToAdd = update.$addToSet.requiredRoles
+
+      // Fetch existing roles first
+      const { data: existing } = await client
+        .from(TABLE_NAME)
+        .select('required_roles')
+        .eq('guild_id', guildId)
+        .eq('command_id', commandId)
+        .single()
+
+      const currentRoles = existing ? existing.required_roles || [] : []
+      // Ensure it's an array
+      const rolesArray = Array.isArray(currentRoles) ? currentRoles : []
+
+      if (!rolesArray.includes(roleToAdd)) {
+        rolesArray.push(roleToAdd)
+      }
+
+      requiredRoles = rolesArray
+    }
 
     const { data, error } = await client
       .from(TABLE_NAME)
       .upsert(
-        { guild_id: guildId, command, required_roles: requiredRoles },
-        { onConflict: 'guild_id,command' }
+        { guild_id: guildId, command_id: commandId, required_roles: requiredRoles },
+        { onConflict: 'guild_id,command_id' }
       )
       .select()
       .single()
@@ -83,7 +106,7 @@ export default {
 
     return {
       guildId: data.guild_id,
-      command: data.command,
+      commandId: data.command_id,
       requiredRoles: data.required_roles,
     }
   },
@@ -97,8 +120,15 @@ export default {
     if (filter.guildId) {
       query = query.eq('guild_id', filter.guildId)
     }
-    if (filter.command) {
-      query = query.eq('command', filter.command)
+    // DELIBERATE DEVIATION from published 3.7.2, which still filters on
+    // `filter.command` here while every other method uses commandId. Its only caller —
+    // the `roleId === 'none'` branch of commands/requiredrole.ts — passes
+    // { guildId, commandId }, so `filter.command` was always undefined and the delete
+    // ran with the GUILD FILTER ALONE: clearing one command's required roles wiped
+    // EVERY command's rows for that guild, while the reply claimed it had cleared only
+    // the named command. Role-gated commands silently lost their gates.
+    if (filter.commandId) {
+      query = query.eq('command_id', filter.commandId)
     }
 
     const { error } = await query
