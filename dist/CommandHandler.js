@@ -11,6 +11,7 @@ const disabled_commands_1 = __importDefault(require("./models/disabled-commands"
 const required_roles_1 = __importDefault(require("./models/required-roles"));
 const cooldown_1 = __importDefault(require("./models/cooldown"));
 const channel_commands_1 = __importDefault(require("./models/channel-commands"));
+const commands_1 = __importDefault(require("./models/commands"));
 const permissions_1 = require("./permissions");
 const CommandErrors_1 = __importDefault(require("./enums/CommandErrors"));
 const Events_1 = __importDefault(require("./enums/Events"));
@@ -44,7 +45,14 @@ class CommandHandler {
     _commandChecks = new Map();
     constructor(instance, client, dir, disabledDefaultCommands, typeScript = false) {
         this._client = client;
-        this.setUp(instance, client, dir, disabledDefaultCommands, typeScript);
+        if (client.isReady()) {
+            this.setUp(instance, client, dir, disabledDefaultCommands, typeScript);
+        }
+        else {
+            client.once('clientReady', () => {
+                this.setUp(instance, client, dir, disabledDefaultCommands, typeScript);
+            });
+        }
     }
     async setUp(instance, client, dir, disabledDefaultCommands, typeScript = false) {
         // Do not pass in TS here because this should always compiled to JS
@@ -78,6 +86,26 @@ class CommandHandler {
                 await this.fetchDisabledCommands();
                 await this.fetchRequiredRoles();
                 await this.fetchChannelOnly();
+                // Sync commands to DB
+                const commandsToSync = new Map();
+                this._commands.forEach((cmd) => {
+                    if (!commandsToSync.has(cmd.names[0])) {
+                        // @ts-ignore
+                        commandsToSync.set(cmd.names[0], cmd);
+                    }
+                });
+                for (const cmd of commandsToSync.values()) {
+                    const result = await commands_1.default.upsert({
+                        name: cmd.names[0],
+                        category: cmd.category,
+                        description: cmd.description,
+                        aliases: cmd.names.slice(1),
+                        is_slash: !!cmd.slash
+                    });
+                    if (result && result.id) {
+                        cmd.setDbId(result.id);
+                    }
+                }
             }
             this._commands.forEach(async (command) => {
                 command.verifyDatabaseCooldowns();
@@ -164,8 +192,26 @@ class CommandHandler {
         if (configuration.default && Object.keys(configuration).length === 1) {
             configuration = configuration.default;
         }
-        const { name = fileName, category, commands, aliases, init, callback, run, execute, error, description, requiredPermissions, permissions, slash, expectedArgs, expectedArgsTypes, minArgs, options = [], autocomplete, } = configuration;
+        const { name = fileName, category, commands, aliases, init, callback, run, execute, error, description, requiredPermissions, permissions, slash, expectedArgs, expectedArgsTypes, minArgs, options = [], autocomplete, delete: del, } = configuration;
         const { testOnly } = configuration;
+        // Extract options from SlashCommandBuilder if using data property
+        // This allows commands to use SlashCommandBuilder pattern while still working with SpaceCommands
+        let finalOptions = options;
+        if (configuration.data && typeof configuration.data.toJSON === 'function') {
+            const jsonData = configuration.data.toJSON();
+            if (jsonData.options) {
+                finalOptions = jsonData.options;
+            }
+            if (instance.debug && finalOptions && finalOptions.length) {
+                console.log(`SpaceCommands > Command "${name || fileName}" using SlashCommandBuilder with ${finalOptions.length} options`);
+            }
+        }
+        else if (configuration.data && configuration.data.options) {
+            finalOptions = configuration.data.options;
+            if (instance.debug) {
+                console.log(`SpaceCommands > Command "${name || fileName}" using SlashCommandBuilder with ${finalOptions.length} options`);
+            }
+        }
         if (run || execute) {
             throw new Error(`Command located at "${file}" has either a "run" or "execute" function. Please rename that function to "callback".`);
         }
@@ -181,6 +227,20 @@ class CommandHandler {
         }
         if (name && !names.includes(name.toLowerCase())) {
             names.unshift(name.toLowerCase());
+        }
+        if (del) {
+            if (slash !== false) {
+                const slashCommands = instance.slashCommands;
+                if (testOnly) {
+                    for (const id of instance.testServers) {
+                        await slashCommands.deleteByName(names[0], id);
+                    }
+                }
+                else {
+                    await slashCommands.deleteByName(names[0]);
+                }
+            }
+            return;
         }
         if (requiredPermissions || permissions) {
             for (const perm of requiredPermissions || permissions) {
@@ -207,7 +267,7 @@ class CommandHandler {
         if (slash !== undefined && typeof slash !== 'boolean' && slash !== 'both') {
             throw new Error(`SpaceCommands > Command "${names[0]}" has a "slash" property that is not boolean "true" or string "both".`);
         }
-        if (!slash && options.length) {
+        if (!slash && finalOptions.length) {
             throw new Error(`SpaceCommands > Command "${names[0]}" has an "options" property but is not a slash command.`);
         }
         if (slash && !(builtIn && !instance.isDBConnected())) {
@@ -217,9 +277,9 @@ class CommandHandler {
             if (minArgs !== undefined && !expectedArgs) {
                 throw new Error(`SpaceCommands > Command "${names[0]}" has "minArgs" property defined without "expectedArgs" property as a slash command.`);
             }
-            if (options.length) {
-                for (const key in options) {
-                    const name = options[key].name;
+            if (finalOptions.length) {
+                for (const key in finalOptions) {
+                    const name = finalOptions[key].name;
                     let lowerCase = name.toLowerCase();
                     if (name !== lowerCase && instance.showWarns) {
                         console.log(`SpaceCommands > Command "${names[0]}" has an option of "${name}". All option names must be lower case for slash commands. SpaceCommands will modify this for you.`);
@@ -228,7 +288,7 @@ class CommandHandler {
                         lowerCase = lowerCase.replace(/\s/g, '_');
                         console.log(`SpaceCommands > Command "${names[0]}" has an option of "${name}" with a white space in it. It is a best practice for option names to only be one word. SpaceCommands will modify this for you.`);
                     }
-                    options[key].name = lowerCase;
+                    finalOptions[key].name = lowerCase;
                 }
             }
             else if (expectedArgs) {
@@ -237,12 +297,12 @@ class CommandHandler {
                     .split(/[>\]] [<\[]/);
                 for (let a = 0; a < split.length; ++a) {
                     const item = split[a];
-                    options.push({
+                    finalOptions.push({
                         name: item.replace(/ /g, '-').toLowerCase(),
                         description: item,
                         type: expectedArgsTypes && expectedArgsTypes.length >= a
                             ? expectedArgsTypes[a]
-                            : 3,
+                            : 'STRING',
                         required: a < minArgs,
                     });
                 }
@@ -250,15 +310,17 @@ class CommandHandler {
             const slashCommands = instance.slashCommands;
             if (testOnly) {
                 for (const id of instance.testServers) {
-                    await slashCommands.create(names[0], description, options, id);
+                    await slashCommands.create(names[0], description, finalOptions, id);
                 }
             }
             else {
-                await slashCommands.create(names[0], description, options);
+                await slashCommands.create(names[0], description, finalOptions);
             }
             if (autocomplete) {
                 const slashCommands = instance.slashCommands;
-                slashCommands.registerAutocomplete(names[0], autocomplete);
+                slashCommands.registerAutocomplete(names[0], async (interaction) => {
+                    await autocomplete(interaction, instance);
+                });
             }
         }
         if (callback) {
@@ -318,8 +380,15 @@ class CommandHandler {
     async fetchRequiredRoles() {
         const results = await required_roles_1.default.find({});
         for (const result of results) {
-            const { guildId, command, requiredRoles } = result;
-            const cmd = this._commands.get(command);
+            const { guildId, commandId, requiredRoles } = result;
+            // Find command by DB ID
+            let cmd;
+            for (const command of this._commands.values()) {
+                if (command.dbId === commandId) {
+                    cmd = command;
+                    break;
+                }
+            }
             if (cmd) {
                 for (const roleId of requiredRoles) {
                     cmd.addRequiredRole(guildId, roleId);

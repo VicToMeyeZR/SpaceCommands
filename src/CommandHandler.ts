@@ -10,6 +10,7 @@ import disabledCommands from './models/disabled-commands'
 import requiredRoles from './models/required-roles'
 import cooldown from './models/cooldown'
 import channelCommands from './models/channel-commands'
+import commandsSchema from './models/commands'
 import { permissionList } from './permissions'
 import { ICommand } from '../typings'
 import CommandErrors from './enums/CommandErrors'
@@ -58,7 +59,13 @@ export default class CommandHandler {
   ) {
     this._client = client
 
-    this.setUp(instance, client, dir, disabledDefaultCommands, typeScript)
+    if (client.isReady()) {
+      this.setUp(instance, client, dir, disabledDefaultCommands, typeScript)
+    } else {
+      client.once('clientReady', () => {
+        this.setUp(instance, client, dir, disabledDefaultCommands, typeScript)
+      })
+    }
   }
 
   private async setUp(
@@ -113,6 +120,29 @@ export default class CommandHandler {
         await this.fetchDisabledCommands()
         await this.fetchRequiredRoles()
         await this.fetchChannelOnly()
+
+        // Sync commands to DB
+        const commandsToSync: Map<string, Command> = new Map()
+        this._commands.forEach((cmd) => {
+          if (!commandsToSync.has(cmd.names[0])) {
+            // @ts-ignore
+            commandsToSync.set(cmd.names[0], cmd)
+          }
+        })
+
+        for (const cmd of commandsToSync.values()) {
+          const result = await commandsSchema.upsert({
+            name: cmd.names[0],
+            category: cmd.category,
+            description: cmd.description,
+            aliases: cmd.names.slice(1),
+            is_slash: !!cmd.slash
+          })
+
+          if (result && result.id) {
+            cmd.setDbId(result.id)
+          }
+        }
       }
 
       this._commands.forEach(async (command) => {
@@ -259,9 +289,36 @@ export default class CommandHandler {
       minArgs,
       options = [],
       autocomplete,
+      delete: del,
     } = configuration
 
     const { testOnly } = configuration
+
+    // Extract options from SlashCommandBuilder if using data property
+    // This allows commands to use SlashCommandBuilder pattern while still working with SpaceCommands
+    let finalOptions = options
+
+    if (configuration.data && typeof configuration.data.toJSON === 'function') {
+      const jsonData = configuration.data.toJSON()
+
+      if (jsonData.options) {
+        finalOptions = jsonData.options
+      }
+
+      if (instance.debug && finalOptions && finalOptions.length) {
+        console.log(
+          `SpaceCommands > Command "${name || fileName}" using SlashCommandBuilder with ${finalOptions.length} options`
+        )
+      }
+    } else if (configuration.data && configuration.data.options) {
+      finalOptions = configuration.data.options
+
+      if (instance.debug) {
+        console.log(
+          `SpaceCommands > Command "${name || fileName}" using SlashCommandBuilder with ${finalOptions.length} options`
+        )
+      }
+    }
 
     if (run || execute) {
       throw new Error(
@@ -289,6 +346,20 @@ export default class CommandHandler {
 
     if (name && !names.includes(name.toLowerCase())) {
       names.unshift(name.toLowerCase())
+    }
+
+    if (del) {
+      if (slash !== false) {
+        const slashCommands = instance.slashCommands
+        if (testOnly) {
+          for (const id of instance.testServers) {
+            await slashCommands.deleteByName(names[0], id)
+          }
+        } else {
+          await slashCommands.deleteByName(names[0])
+        }
+      }
+      return
     }
 
     if (requiredPermissions || permissions) {
@@ -331,7 +402,7 @@ export default class CommandHandler {
       )
     }
 
-    if (!slash && options.length) {
+    if (!slash && finalOptions.length) {
       throw new Error(
         `SpaceCommands > Command "${names[0]}" has an "options" property but is not a slash command.`
       )
@@ -350,9 +421,9 @@ export default class CommandHandler {
         )
       }
 
-      if (options.length) {
-        for (const key in options) {
-          const name = options[key].name
+      if (finalOptions.length) {
+        for (const key in finalOptions) {
+          const name = finalOptions[key].name
           let lowerCase = name.toLowerCase()
 
           if (name !== lowerCase && instance.showWarns) {
@@ -368,7 +439,7 @@ export default class CommandHandler {
             )
           }
 
-          options[key].name = lowerCase
+          finalOptions[key].name = lowerCase
         }
       } else if (expectedArgs) {
         const split = expectedArgs
@@ -378,13 +449,13 @@ export default class CommandHandler {
         for (let a = 0; a < split.length; ++a) {
           const item = split[a]
 
-          options.push({
+          finalOptions.push({
             name: item.replace(/ /g, '-').toLowerCase(),
             description: item,
             type:
               expectedArgsTypes && expectedArgsTypes.length >= a
                 ? expectedArgsTypes[a]
-                : 3,
+                : 'STRING',
             required: a < minArgs,
           })
         }
@@ -393,15 +464,17 @@ export default class CommandHandler {
       const slashCommands = instance.slashCommands
       if (testOnly) {
         for (const id of instance.testServers) {
-          await slashCommands.create(names[0], description, options, id)
+          await slashCommands.create(names[0], description, finalOptions, id)
         }
       } else {
-        await slashCommands.create(names[0], description, options)
+        await slashCommands.create(names[0], description, finalOptions)
       }
 
       if (autocomplete) {
         const slashCommands = instance.slashCommands
-        slashCommands.registerAutocomplete(names[0], autocomplete)
+        slashCommands.registerAutocomplete(names[0], async (interaction: any) => {
+          await autocomplete(interaction, instance)
+        })
       }
     }
 
@@ -498,9 +571,17 @@ export default class CommandHandler {
     const results: any[] = await requiredRoles.find({})
 
     for (const result of results) {
-      const { guildId, command, requiredRoles } = result
+      const { guildId, commandId, requiredRoles } = result
 
-      const cmd = this._commands.get(command)
+      // Find command by DB ID
+      let cmd: Command | undefined
+      for (const command of this._commands.values()) {
+        if (command.dbId === commandId) {
+          cmd = command
+          break
+        }
+      }
+
       if (cmd) {
         for (const roleId of requiredRoles) {
           cmd.addRequiredRole(guildId, roleId)

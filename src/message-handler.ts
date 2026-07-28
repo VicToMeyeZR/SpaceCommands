@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { Guild, User } from 'discord.js'
 
+import messageSchema from './models/message'
 import languageSchema from './models/languages'
 import userLanguageSchema from './models/user-languages'
 import SpaceCommands from '.'
@@ -23,19 +24,12 @@ export default class MessageHandler {
       ; (async () => {
         this._messages = messagePath ? await import(messagePath) : defualtMessages
 
-        for (const messageId of Object.keys(this._messages)) {
-          for (const language of Object.keys(this._messages[messageId])) {
-            this._languages.push(language.toLowerCase())
-          }
-        }
-
-        if (!this._languages.includes(instance.defaultLanguage)) {
-          throw new Error(
-            `The current default language defined is not supported.`
-          )
-        }
-
         if (instance.isDBConnected()) {
+          const dbMessages = await messageSchema.find()
+          for (const msg of dbMessages) {
+            this._messages[msg._id] = msg.text
+          }
+
           const results = await languageSchema.find()
 
           // @ts-ignore
@@ -49,6 +43,31 @@ export default class MessageHandler {
             this._userLanguages.set(userId, language)
           }
         }
+
+        const languages = this._messages['LANGUAGE_NOT_SUPPORTED'] || this._messages['NEW_LANGUAGE']
+
+        if (languages) {
+          for (const language of Object.keys(languages)) {
+            this._languages.push(language.toLowerCase())
+          }
+        } else {
+          // Fallback: Use the first message found if standard ones are missing (unlikely)
+          for (const messageId of Object.keys(this._messages)) {
+            for (const language of Object.keys(this._messages[messageId])) {
+              const lowerCaseLanguage = language.toLowerCase()
+              if (!this._languages.includes(lowerCaseLanguage)) {
+                this._languages.push(lowerCaseLanguage)
+              }
+            }
+            break // Only check the first message to avoid iterating config objects
+          }
+        }
+
+        if (!this._languages.includes(instance.defaultLanguage)) {
+          throw new Error(
+            `The current default language defined is not supported.`
+          )
+        }
       })()
   }
 
@@ -59,6 +78,21 @@ export default class MessageHandler {
   public async setLanguage(guild: Guild | null, language: string) {
     if (guild) {
       this._guildLanguages.set(guild.id, language)
+
+      if (this._instance.isDBConnected()) {
+        await languageSchema.findOneAndUpdate(
+          {
+            _id: guild.id,
+          },
+          {
+            _id: guild.id,
+            language,
+          },
+          {
+            upsert: true,
+          }
+        )
+      }
     }
   }
 

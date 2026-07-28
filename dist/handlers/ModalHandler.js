@@ -3,6 +3,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+// @ts-nocheck
+const discord_js_1 = require("discord.js");
 const get_all_files_1 = __importDefault(require("../get-all-files"));
 class ModalHandler {
     _client;
@@ -56,7 +58,7 @@ class ModalHandler {
                     if (!interaction.replied && !interaction.deferred) {
                         await interaction.reply({
                             content: 'An error occurred while processing this form.',
-                            ephemeral: true,
+                            flags: discord_js_1.MessageFlags.Ephemeral,
                         });
                     }
                 }

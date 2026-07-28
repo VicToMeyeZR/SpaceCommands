@@ -36,6 +36,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+const message_1 = __importDefault(require("./models/message"));
 const languages_1 = __importDefault(require("./models/languages"));
 const user_languages_1 = __importDefault(require("./models/user-languages"));
 const defualtMessages = require('../messages.json');
@@ -49,15 +50,11 @@ class MessageHandler {
         this._instance = instance;
         (async () => {
             this._messages = messagePath ? await Promise.resolve(`${messagePath}`).then(s => __importStar(require(s))) : defualtMessages;
-            for (const messageId of Object.keys(this._messages)) {
-                for (const language of Object.keys(this._messages[messageId])) {
-                    this._languages.push(language.toLowerCase());
-                }
-            }
-            if (!this._languages.includes(instance.defaultLanguage)) {
-                throw new Error(`The current default language defined is not supported.`);
-            }
             if (instance.isDBConnected()) {
+                const dbMessages = await message_1.default.find();
+                for (const msg of dbMessages) {
+                    this._messages[msg._id] = msg.text;
+                }
                 const results = await languages_1.default.find();
                 // @ts-ignore
                 for (const { _id: guildId, language } of results) {
@@ -69,6 +66,27 @@ class MessageHandler {
                     this._userLanguages.set(userId, language);
                 }
             }
+            const languages = this._messages['LANGUAGE_NOT_SUPPORTED'] || this._messages['NEW_LANGUAGE'];
+            if (languages) {
+                for (const language of Object.keys(languages)) {
+                    this._languages.push(language.toLowerCase());
+                }
+            }
+            else {
+                // Fallback: Use the first message found if standard ones are missing (unlikely)
+                for (const messageId of Object.keys(this._messages)) {
+                    for (const language of Object.keys(this._messages[messageId])) {
+                        const lowerCaseLanguage = language.toLowerCase();
+                        if (!this._languages.includes(lowerCaseLanguage)) {
+                            this._languages.push(lowerCaseLanguage);
+                        }
+                    }
+                    break; // Only check the first message to avoid iterating config objects
+                }
+            }
+            if (!this._languages.includes(instance.defaultLanguage)) {
+                throw new Error(`The current default language defined is not supported.`);
+            }
         })();
     }
     languages() {
@@ -77,6 +95,16 @@ class MessageHandler {
     async setLanguage(guild, language) {
         if (guild) {
             this._guildLanguages.set(guild.id, language);
+            if (this._instance.isDBConnected()) {
+                await languages_1.default.findOneAndUpdate({
+                    _id: guild.id,
+                }, {
+                    _id: guild.id,
+                    language,
+                }, {
+                    upsert: true,
+                });
+            }
         }
     }
     async setUserLanguage(user, language) {

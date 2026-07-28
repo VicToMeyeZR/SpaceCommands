@@ -2,6 +2,7 @@
 import {
   ApplicationCommand,
   ApplicationCommandOptionData,
+  ApplicationCommandOptionType,
   AutocompleteInteraction,
   Channel,
   Client,
@@ -10,12 +11,48 @@ import {
   Guild,
   GuildMember,
   EmbedBuilder,
+  MessageFlags,
   User,
 } from 'discord.js'
 import path from 'path'
 
 import getAllFiles from './get-all-files'
 import SpaceCommands from '.'
+
+const convertOptions = (options: any): any => {
+  if (!options) return options
+
+  return options.map((option: any) => {
+    // Convert type from string to integer if needed
+    if (typeof option.type === 'string') {
+      const typeMap: { [key: string]: any } = {
+        SUB_COMMAND: ApplicationCommandOptionType.Subcommand,
+        SUB_COMMAND_GROUP: ApplicationCommandOptionType.SubcommandGroup,
+        STRING: ApplicationCommandOptionType.String,
+        INTEGER: ApplicationCommandOptionType.Integer,
+        BOOLEAN: ApplicationCommandOptionType.Boolean,
+        USER: ApplicationCommandOptionType.User,
+        CHANNEL: ApplicationCommandOptionType.Channel,
+        ROLE: ApplicationCommandOptionType.Role,
+        MENTIONABLE: ApplicationCommandOptionType.Mentionable,
+        NUMBER: ApplicationCommandOptionType.Number,
+        ATTACHMENT: ApplicationCommandOptionType.Attachment,
+      }
+
+      const upperType = option.type.toUpperCase()
+      if (typeMap[upperType]) {
+        option.type = typeMap[upperType]
+      }
+    }
+
+    // Handle nested options recursively
+    if (option.options) {
+      option.options = convertOptions(option.options)
+    }
+
+    return option
+  })
+}
 
 class SlashCommands {
   private _client: Client
@@ -54,7 +91,7 @@ class SlashCommands {
       if (typeof reply === 'string') {
         return interaction.reply({
           content: reply,
-          ephemeral: this._instance.ephemeral,
+          flags: this._instance.ephemeral ? MessageFlags.Ephemeral : undefined,
         })
       } else {
         let embeds = []
@@ -67,7 +104,7 @@ class SlashCommands {
 
         return interaction.reply({
           embeds,
-          ephemeral: this._instance.ephemeral,
+          flags: this._instance.ephemeral ? MessageFlags.Ephemeral : undefined,
         })
       }
     }
@@ -111,7 +148,7 @@ class SlashCommands {
               {},
               interaction.user
             ),
-            ephemeral: this._instance.ephemeral,
+            flags: this._instance.ephemeral ? MessageFlags.Ephemeral : undefined,
           })
           return
         }
@@ -176,9 +213,9 @@ class SlashCommands {
     return (
       command.options?.filter((opt, index) => {
         return (
-          opt?.required !== options[index]?.required &&
-          opt?.name !== options[index]?.name &&
-          opt?.options?.length !== options.length
+          opt?.required !== options[index]?.required ||
+          opt?.name !== options[index]?.name ||
+          (opt?.options && opt.options.length !== options[index]?.options?.length)
         )
       }).length !== 0
     )
@@ -268,6 +305,19 @@ class SlashCommands {
     }
 
     return Promise.resolve(undefined)
+  }
+
+  public async deleteByName(name: string, guildId?: string) {
+    const commands = this.getCommands(guildId)
+    if (commands) {
+      await commands.fetch()
+
+      const cmd = commands.cache.find((cmd) => cmd.name === name) as ApplicationCommand
+
+      if (cmd) {
+        await this.delete(cmd.id, guildId)
+      }
+    }
   }
 
   public async invokeCommand(

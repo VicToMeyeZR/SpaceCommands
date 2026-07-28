@@ -8,6 +8,7 @@ import {
   MentionableSelectMenuInteraction,
   InteractionType,
   ComponentType,
+  MessageFlags,
 } from 'discord.js'
 import SpaceCommands from '..'
 import path from 'path'
@@ -130,7 +131,7 @@ export default class ComponentHandler {
           if (!interaction.replied && !interaction.deferred) {
             await interaction.reply({
               content: 'An error occurred while processing this button.',
-              ephemeral: true,
+              flags: MessageFlags.Ephemeral,
             })
           }
         }
@@ -162,7 +163,7 @@ export default class ComponentHandler {
           if (!interaction.replied && !interaction.deferred) {
             await interaction.reply({
               content: 'An error occurred while processing this menu.',
-              ephemeral: true,
+              flags: MessageFlags.Ephemeral,
             })
           }
         }

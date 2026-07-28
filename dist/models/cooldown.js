@@ -84,6 +84,21 @@ exports.default = {
             cooldown: data.cooldown,
         };
     },
+    async deleteOne(filter) {
+        const client = (0, supabase_1.getSupabaseClient)();
+        if (!client)
+            return { deletedCount: 0 };
+        let query = client.from(TABLE_NAME).delete();
+        if (filter._id) {
+            query = query.eq('id', filter._id);
+        }
+        const { error, count } = await query;
+        if (error) {
+            console.error('SpaceCommands > Error deleting cooldown:', error);
+            return { deletedCount: 0 };
+        }
+        return { deletedCount: count || 0 };
+    },
     async deleteMany(filter) {
         const client = (0, supabase_1.getSupabaseClient)();
         if (!client)

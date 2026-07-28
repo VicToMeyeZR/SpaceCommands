@@ -58,23 +58,6 @@ class SpaceCommands extends events_1.EventEmitter {
             throw new Error('No Discord JS Client provided as first argument!');
         }
         let { commandsDir = '', commandDir = '', featuresDir = '', featureDir = '', componentsDir, modalsDir, contextMenusDir, messagesPath, supabaseUrl, supabaseKey, showWarns = true, delErrMsgCooldown = -1, defaultLanguage = 'english', ignoreBots = true, dbOptions, testServers, botOwners, disabledDefaultCommands = [], typeScript = false, ephemeral = true, debug = false, } = options || {};
-        // Support for Supabase (recommended) or MongoDB (deprecated)
-        if (supabaseUrl && supabaseKey) {
-            (0, supabase_1.initSupabase)(supabaseUrl, supabaseKey);
-            this._supabaseClient = (0, supabase_1.getSupabaseClient)();
-            // Load prefixes from Supabase
-            const results = await prefixes_1.default.find({});
-            for (const result of results) {
-                const { _id, prefix } = result;
-                this._prefixes[_id] = prefix;
-            }
-        }
-        else {
-            if (showWarns) {
-                console.warn('SpaceCommands > No database connection provided. Some features might not work! Please provide supabaseUrl and supabaseKey.');
-            }
-            this.emit(Events_1.default.DATABASE_CONNECTED, null, '');
-        }
         this._commandsDir = commandsDir || commandDir || this._commandsDir;
         this._featuresDir = featuresDir || featureDir || this._featuresDir;
         this._ephemeral = ephemeral;
@@ -132,6 +115,29 @@ class SpaceCommands extends events_1.EventEmitter {
         this._entitlementHandler = new EntitlementHandler_1.default(this);
         this._pollHandler = new PollHandler_1.default(this);
         this._autoModHandler = new AutoModHandler_1.default(this);
+        // Support for Supabase (recommended) or MongoDB (deprecated)
+        // MOVED TO END TO PREVENT BLOCKING HANDLER INIT
+        if (supabaseUrl && supabaseKey) {
+            (0, supabase_1.initSupabase)(supabaseUrl, supabaseKey);
+            this._supabaseClient = (0, supabase_1.getSupabaseClient)();
+            // Load prefixes from Supabase
+            try {
+                const results = await prefixes_1.default.find({});
+                for (const result of results) {
+                    const { _id, prefix } = result;
+                    this._prefixes[_id] = prefix;
+                }
+            }
+            catch (err) {
+                console.warn('SpaceCommands > Failed to load prefixes from Supabase:', err);
+            }
+        }
+        else {
+            if (showWarns) {
+                console.warn('SpaceCommands > No database connection provided. Some features might not work! Please provide supabaseUrl and supabaseKey.');
+            }
+            this.emit(Events_1.default.DATABASE_CONNECTED, null, '');
+        }
         console.log('SpaceCommands > Your bot is now running.');
     }
     setMongoPath(mongoPath) {
