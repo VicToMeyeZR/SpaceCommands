@@ -2,8 +2,41 @@
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
+// @ts-nocheck
+const discord_js_1 = require("discord.js");
 const path_1 = __importDefault(require("path"));
 const get_all_files_1 = __importDefault(require("./get-all-files"));
+const convertOptions = (options) => {
+    if (!options)
+        return options;
+    return options.map((option) => {
+        // Convert type from string to integer if needed
+        if (typeof option.type === 'string') {
+            const typeMap = {
+                SUB_COMMAND: discord_js_1.ApplicationCommandOptionType.Subcommand,
+                SUB_COMMAND_GROUP: discord_js_1.ApplicationCommandOptionType.SubcommandGroup,
+                STRING: discord_js_1.ApplicationCommandOptionType.String,
+                INTEGER: discord_js_1.ApplicationCommandOptionType.Integer,
+                BOOLEAN: discord_js_1.ApplicationCommandOptionType.Boolean,
+                USER: discord_js_1.ApplicationCommandOptionType.User,
+                CHANNEL: discord_js_1.ApplicationCommandOptionType.Channel,
+                ROLE: discord_js_1.ApplicationCommandOptionType.Role,
+                MENTIONABLE: discord_js_1.ApplicationCommandOptionType.Mentionable,
+                NUMBER: discord_js_1.ApplicationCommandOptionType.Number,
+                ATTACHMENT: discord_js_1.ApplicationCommandOptionType.Attachment,
+            };
+            const upperType = option.type.toUpperCase();
+            if (typeMap[upperType]) {
+                option.type = typeMap[upperType];
+            }
+        }
+        // Handle nested options recursively
+        if (option.options) {
+            option.options = convertOptions(option.options);
+        }
+        return option;
+    });
+};
 class SlashCommands {
     _client;
     _instance;
@@ -28,7 +61,7 @@ class SlashCommands {
             if (typeof reply === 'string') {
                 return interaction.reply({
                     content: reply,
-                    ephemeral: this._instance.ephemeral,
+                    flags: this._instance.ephemeral ? discord_js_1.MessageFlags.Ephemeral : undefined,
                 });
             }
             else {
@@ -41,7 +74,7 @@ class SlashCommands {
                 }
                 return interaction.reply({
                     embeds,
-                    ephemeral: this._instance.ephemeral,
+                    flags: this._instance.ephemeral ? discord_js_1.MessageFlags.Ephemeral : undefined,
                 });
             }
         };
@@ -73,7 +106,7 @@ class SlashCommands {
                 if (!command) {
                     interaction.reply({
                         content: this._instance.messageHandler.get(guild, 'INVALID_SLASH_COMMAND', {}, interaction.user),
-                        ephemeral: this._instance.ephemeral,
+                        flags: this._instance.ephemeral ? discord_js_1.MessageFlags.Ephemeral : undefined,
                     });
                     return;
                 }
@@ -109,9 +142,9 @@ class SlashCommands {
     }
     didOptionsChange(command, options) {
         return (command.options?.filter((opt, index) => {
-            return (opt?.required !== options[index]?.required &&
-                opt?.name !== options[index]?.name &&
-                opt?.options?.length !== options.length);
+            return (opt?.required !== options[index]?.required ||
+                opt?.name !== options[index]?.name ||
+                (opt?.options && opt.options.length !== options[index]?.options?.length));
         }).length !== 0);
     }
     async create(name, description, options, guildId) {
@@ -163,6 +196,16 @@ class SlashCommands {
             }
         }
         return Promise.resolve(undefined);
+    }
+    async deleteByName(name, guildId) {
+        const commands = this.getCommands(guildId);
+        if (commands) {
+            await commands.fetch();
+            const cmd = commands.cache.find((cmd) => cmd.name === name);
+            if (cmd) {
+                await this.delete(cmd.id, guildId);
+            }
+        }
     }
     async invokeCommand(interaction, commandName, options, args) {
         const command = this._instance.commandHandler.getCommand(commandName);

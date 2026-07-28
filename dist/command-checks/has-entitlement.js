@@ -1,6 +1,14 @@
 "use strict";
 module.exports = async (guild, command, instance, member, user, reply) => {
     const { requiredEntitlements, premiumOnly } = command;
+    // Bypass for Bot Owners
+    if (instance.botOwner.includes(user.id)) {
+        return true;
+    }
+    // Bypass for Test Servers
+    if (guild && instance.testServers.includes(guild.id)) {
+        return true;
+    }
     // If no entitlements are required, allow the command
     if (!requiredEntitlements.length && !premiumOnly) {
         return true;
@@ -8,7 +16,11 @@ module.exports = async (guild, command, instance, member, user, reply) => {
     if (guild && instance.premiumServers.includes(guild.id)) {
         return true;
     }
-    else if (guild) {
+    else if (guild && instance.debug) {
+        // Debug-gated: this runs on EVERY entitlement check for every guild outside the
+        // premium list, so ungated it logs on each paid-command invocation in production
+        // and reprints the whole premium-server list each time. `instance.debug` is how
+        // CommandHandler gates its own diagnostics.
         console.log(`[EntitlementCheck] Guild ${guild.id} NOT in premium list:`, instance.premiumServers);
     }
     const entitlementHandler = instance.entitlementHandler;
@@ -18,7 +30,7 @@ module.exports = async (guild, command, instance, member, user, reply) => {
     }
     // Check if user has required entitlements
     if (requiredEntitlements.length > 0) {
-        const { hasEntitlement } = await entitlementHandler.hasAnyEntitlement(user.id, requiredEntitlements);
+        const { hasEntitlement } = await entitlementHandler.hasAnyEntitlement(user.id, requiredEntitlements, guild?.id);
         let hasAccess = hasEntitlement;
         if (!hasAccess && guild) {
             const { hasEntitlement: hasGuildEntitlement } = await entitlementHandler.hasAnyGuildEntitlement(guild.id, requiredEntitlements);
@@ -44,6 +56,11 @@ module.exports = async (guild, command, instance, member, user, reply) => {
     if (premiumOnly) {
         const allEntitlements = await entitlementHandler.getUserEntitlements(user.id);
         let hasPremium = allEntitlements.length > 0;
+        // Check guild overrides if no user entitlement found
+        if (!hasPremium && guild) {
+            const overrides = await entitlementHandler.getGuildOverrides(guild.id);
+            hasPremium = overrides.length > 0;
+        }
         if (!hasPremium && guild) {
             const guildEntitlements = await entitlementHandler.getGuildEntitlements(guild.id);
             hasPremium = guildEntitlements.length > 0;

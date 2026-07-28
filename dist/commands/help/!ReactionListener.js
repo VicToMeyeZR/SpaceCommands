@@ -144,7 +144,23 @@ class ReactionHandler {
         if (names.length && typeof names !== 'string') {
             desc += `\n${instance.messageHandler.getEmbed(guild, 'HELP_MENU', 'ALIASES')}: "${names.join('", "')}"`;
         }
-        desc += `\n${instance.messageHandler.getEmbed(guild, 'HELP_MENU', 'SYNTAX')}: "${instance.getPrefix(guild)}${mainName}${syntax ? ' ' : ''}${syntax || ''}"`;
+        desc += `\n${instance.messageHandler.getEmbed(guild, 'HELP_MENU')}: "${instance.getPrefix(guild)}${mainName}${syntax ? ' ' : ''}${syntax || ''}"`;
+        if (guild) {
+            const requiredRoles = command.getRequiredRoles(guild.id);
+            if (requiredRoles && requiredRoles.length) {
+                const roleNames = [];
+                for (const roleId of requiredRoles) {
+                    const role = guild.roles.cache.get(roleId);
+                    if (role) {
+                        roleNames.push(role.name);
+                    }
+                    else {
+                        roleNames.push(roleId);
+                    }
+                }
+                desc += `\nRequired Roles: ${roleNames.join(', ')}`;
+            }
+        }
         return desc;
     };
     /**

@@ -1,51 +1,46 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-const Events_1 = __importDefault(require("../enums/Events"));
+const discord_js_1 = require("discord.js");
+let instance;
 module.exports = {
-    description: 'Displays or sets your personal language preference',
+    init: (client, inst) => {
+        instance = inst;
+    },
     category: 'Configuration',
-    aliases: ['mylang'],
-    maxArgs: 1,
-    expectedArgs: '[language]',
-    testOnly: true,
-    cooldown: '2s',
+    description: 'Set your personal language preference for the bot.',
+    slash: true,
+    testOnly: false,
     options: [
         {
             name: 'language',
-            description: 'The language to set for yourself',
+            description: 'The language code (e.g., english, spanish)',
             type: 3, // STRING
-            required: false,
+            required: true,
+            autocomplete: true,
         },
     ],
-    slash: 'both',
+    autocomplete: (interaction) => {
+        const focusedValue = interaction.options.getFocused().toLowerCase();
+        const choices = instance.messageHandler.languages();
+        const filtered = choices.filter((choice) => choice.startsWith(focusedValue)).slice(0, 25);
+        interaction.respond(filtered.map((choice) => ({ name: choice, value: choice })));
+    },
     callback: async (options) => {
-        const { channel, text, instance, user } = options;
-        const { guild } = channel;
-        // Allow in DMs
-        // if (!guild) {
-        //   return
-        // }
-        const { messageHandler } = instance;
-        if (!instance.isDBConnected()) {
-            return instance.messageHandler.get(guild, 'NO_DATABASE_FOUND', {}, user);
+        const { interaction, instance, text, guild, user } = options;
+        if (!interaction || !interaction.isChatInputCommand()) {
+            return;
         }
         const lang = text.toLowerCase();
-        if (!lang) {
-            return instance.messageHandler.get(guild, 'CURRENT_LANGUAGE', {
-                LANGUAGE: instance.messageHandler.getLanguage(guild, user),
-            }, user);
-        }
-        if (!messageHandler.languages().includes(lang)) {
-            instance.emit(Events_1.default.LANGUAGE_NOT_SUPPORTED, guild, lang);
-            return messageHandler.get(guild, 'LANGUAGE_NOT_SUPPORTED', {
-                LANGUAGE: lang,
-            }, user);
+        if (!instance.messageHandler.languages().includes(lang)) {
+            await interaction.reply({
+                content: instance.messageHandler.get(guild, 'LANGUAGE_NOT_SUPPORTED', { LANGUAGE: lang }),
+                flags: discord_js_1.MessageFlags.Ephemeral,
+            });
+            return;
         }
         await instance.messageHandler.setUserLanguage(user, lang);
-        return instance.messageHandler.get(guild, 'NEW_LANGUAGE', {
-            LANGUAGE: lang,
-        }, user);
+        await interaction.reply({
+            content: instance.messageHandler.get(guild, 'NEW_LANGUAGE', { LANGUAGE: lang }, user),
+            flags: discord_js_1.MessageFlags.Ephemeral,
+        });
     },
 };

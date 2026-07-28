@@ -3,6 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+const discord_js_1 = require("discord.js");
 const get_all_files_1 = __importDefault(require("../get-all-files"));
 class ComponentHandler {
     _client;
@@ -71,7 +72,7 @@ class ComponentHandler {
                     if (!interaction.replied && !interaction.deferred) {
                         await interaction.reply({
                             content: 'An error occurred while processing this button.',
-                            ephemeral: true,
+                            flags: discord_js_1.MessageFlags.Ephemeral,
                         });
                     }
                 }
@@ -92,7 +93,7 @@ class ComponentHandler {
                     if (!interaction.replied && !interaction.deferred) {
                         await interaction.reply({
                             content: 'An error occurred while processing this menu.',
-                            ephemeral: true,
+                            flags: discord_js_1.MessageFlags.Ephemeral,
                         });
                     }
                 }

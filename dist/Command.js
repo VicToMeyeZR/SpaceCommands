@@ -34,7 +34,9 @@ class Command {
     _requiredChannels = new Map(); // <GuildID-Command, Channel IDs>
     _requiredEntitlements = [];
     _premiumOnly = false;
-    constructor(instance, client, names, callback, error, { category, minArgs, maxArgs, syntaxError, expectedArgs, description, requiredPermissions, permissions, cooldown, globalCooldown, ownerOnly = false, hidden = false, guildOnly = false, testOnly = false, slash = false, requireRoles = false, requiredEntitlements, premiumOnly = false, }) {
+    _delete = false;
+    _dbId = '';
+    constructor(instance, client, names, callback, error, { category, minArgs, maxArgs, syntaxError, expectedArgs, description, requiredPermissions, permissions, cooldown, globalCooldown, ownerOnly = false, hidden = false, guildOnly = false, testOnly = false, slash = false, requireRoles = false, requiredEntitlements, premiumOnly = false, delete: del = false, }) {
         this.instance = instance;
         this.client = client;
         this._names = typeof names === 'string' ? [names] : names;
@@ -60,6 +62,7 @@ class Command {
                 ? [requiredEntitlements]
                 : requiredEntitlements || [];
         this._premiumOnly = premiumOnly;
+        this._delete = del;
         if (this.cooldown && this.globalCooldown) {
             throw new Error(`Command "${names[0]}" has both a global and per-user cooldown. Commands can only have up to one of these properties.`);
         }
@@ -379,6 +382,15 @@ class Command {
     }
     get premiumOnly() {
         return this._premiumOnly;
+    }
+    get delete() {
+        return this._delete;
+    }
+    get dbId() {
+        return this._dbId;
+    }
+    setDbId(id) {
+        this._dbId = id;
     }
 }
 module.exports = Command;
