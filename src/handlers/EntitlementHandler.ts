@@ -7,6 +7,7 @@ import {
   GuildMember,
 } from 'discord.js'
 import SpaceCommands from '..'
+import premiumOverrides from '../models/premium-overrides'
 
 export interface IEntitlementConfig {
   skuId: string
@@ -17,6 +18,7 @@ export interface IEntitlementConfig {
 export interface IEntitlementCheck {
   hasEntitlement: boolean
   entitlement?: Entitlement
+  isOverride?: boolean
 }
 
 /**
@@ -27,7 +29,9 @@ export default class EntitlementHandler {
   private _client: Client
   private _instance: SpaceCommands
   private _skus: Map<string, IEntitlementConfig> = new Map()
+  private _hierarchy: Map<string, string[]> = new Map() // childSku -> parentSkus
   private _entitlementCache: Map<string, Entitlement[]> = new Map()
+  private _overrideCache: Map<string, string[]> = new Map() // guildId -> skuIds
   private _cacheTimeout = 5 * 60 * 1000 // 5 minutes
 
   constructor(instance: SpaceCommands) {
@@ -73,6 +77,35 @@ export default class EntitlementHandler {
   }
 
   /**
+   * Register a SKU hierarchy
+   * @param childSku The SKU that is included in the parent SKUs
+   * @param parentSkus The SKUs that include the child SKU
+   */
+  public registerHierarchy(
+    childSku: string,
+    parentSkus: string[]
+  ): EntitlementHandler {
+    const existing = this._hierarchy.get(childSku) || []
+    this._hierarchy.set(childSku, [...new Set([...existing, ...parentSkus])])
+
+    if (this._instance.debug) {
+      console.log(
+        `SpaceCommands > Registered hierarchy: ${parentSkus.join(', ')} includes ${childSku}`
+      )
+    }
+
+    return this
+  }
+
+  /**
+   * Get all SKUs that satisfy the required SKU (including itself and its parents)
+   */
+  public getSatisfyingSkus(skuId: string): string[] {
+    const parents = this._hierarchy.get(skuId) || []
+    return [skuId, ...parents]
+  }
+
+  /**
    * Register a SKU for premium features
    */
   public registerSKU(config: IEntitlementConfig): EntitlementHandler {
@@ -102,10 +135,25 @@ export default class EntitlementHandler {
    */
   public async hasEntitlement(
     userId: Snowflake,
-    skuId: string
+    skuId: string,
+    guildId?: Snowflake
   ): Promise<IEntitlementCheck> {
+    const validSkuIds = this.getSatisfyingSkus(skuId)
+
+    // First, check for guild overrides if guildId is provided
+    if (guildId) {
+      for (const validSku of validSkuIds) {
+        if (await this.hasGuildOverride(guildId, validSku)) {
+          return {
+            hasEntitlement: true,
+            isOverride: true,
+          }
+        }
+      }
+    }
+
     const entitlements = await this.getUserEntitlements(userId)
-    const entitlement = entitlements.find((e) => e.skuId === skuId)
+    const entitlement = entitlements.find((e) => validSkuIds.includes(e.skuId))
 
     return {
       hasEntitlement: !!entitlement,
@@ -118,10 +166,30 @@ export default class EntitlementHandler {
    */
   public async hasAnyEntitlement(
     userId: Snowflake,
-    skuIds: string[]
+    skuIds: string[],
+    guildId?: Snowflake
   ): Promise<IEntitlementCheck> {
+    // Expand checks to include hierarchy
+    const allValidSkuIds = new Set<string>()
+    for (const skuId of skuIds) {
+      this.getSatisfyingSkus(skuId).forEach((id) => allValidSkuIds.add(id))
+    }
+    const validSkuList = Array.from(allValidSkuIds)
+
+    // First, check for guild overrides if guildId is provided
+    if (guildId) {
+      for (const skuId of validSkuList) {
+        if (await this.hasGuildOverride(guildId, skuId)) {
+          return {
+            hasEntitlement: true,
+            isOverride: true,
+          }
+        }
+      }
+    }
+
     const entitlements = await this.getUserEntitlements(userId)
-    const entitlement = entitlements.find((e) => skuIds.includes(e.skuId))
+    const entitlement = entitlements.find((e) => validSkuList.includes(e.skuId))
 
     return {
       hasEntitlement: !!entitlement,
@@ -150,12 +218,73 @@ export default class EntitlementHandler {
    */
   public async hasAllEntitlements(
     userId: Snowflake,
-    skuIds: string[]
+    skuIds: string[],
+    guildId?: Snowflake
   ): Promise<boolean> {
-    const entitlements = await this.getUserEntitlements(userId)
-    const entitlementSkus = entitlements.map((e) => e.skuId)
+    // Optimisation: Get user entitlements once
+    const userEntitlements = await this.getUserEntitlements(userId)
+    const userSkuIds = userEntitlements.map((e) => e.skuId)
 
-    return skuIds.every((skuId) => entitlementSkus.includes(skuId))
+    for (const skuId of skuIds) {
+      const validSkuIds = this.getSatisfyingSkus(skuId)
+
+      // Check if user has ANY of the satisfying SKUs for this requirement
+      let hasRequirement = userSkuIds.some((id) => validSkuIds.includes(id))
+
+      if (!hasRequirement && guildId) {
+        // Check overrides for ANY satisfying SKU
+        for (const validSku of validSkuIds) {
+          if (await this.hasGuildOverride(guildId, validSku)) {
+            hasRequirement = true
+            break
+          }
+        }
+      }
+
+      if (!hasRequirement) {
+        return false
+      }
+    }
+
+    return true
+  }
+
+  /**
+   * Check if a guild has an override for a specific SKU
+   */
+  public async hasGuildOverride(
+    guildId: Snowflake,
+    skuId: string,
+    useCache = true
+  ): Promise<boolean> {
+    if (!this._instance.isDBConnected()) {
+      return false
+    }
+
+    if (useCache && this._overrideCache.has(guildId)) {
+      const overrides = this._overrideCache.get(guildId)!
+      return overrides.includes(skuId)
+    }
+
+    try {
+      const result = await premiumOverrides.findOne(guildId)
+      const skuIds = result?.skuId ? [result.skuId] : []
+
+      this._overrideCache.set(guildId, skuIds)
+
+      // Clear cache after timeout
+      setTimeout(() => {
+        this._overrideCache.delete(guildId)
+      }, this._cacheTimeout)
+
+      return skuIds.includes(skuId)
+    } catch (error) {
+      console.error(
+        `SpaceCommands > Error checking guild override for ${guildId}:`,
+        error
+      )
+      return false
+    }
   }
 
   /**
@@ -216,6 +345,43 @@ export default class EntitlementHandler {
   }
 
   /**
+   * Get all active overrides for a guild
+   */
+  public async getGuildOverrides(
+    guildId: Snowflake,
+    useCache = true
+  ): Promise<string[]> {
+    if (!this._instance.isDBConnected()) {
+      return []
+    }
+
+    if (useCache && this._overrideCache.has(guildId)) {
+      return this._overrideCache.get(guildId)!
+    }
+
+    try {
+      const result = await premiumOverrides.findOne(guildId)
+      const overrideSku = result?.skuId
+      const overrides = overrideSku ? [overrideSku] : []
+
+      this._overrideCache.set(guildId, overrides)
+
+      // Clear cache after timeout
+      setTimeout(() => {
+        this._overrideCache.delete(guildId)
+      }, this._cacheTimeout)
+
+      return overrides
+    } catch (error) {
+      console.error(
+        `SpaceCommands > Error fetching guild overrides for ${guildId}:`,
+        error
+      )
+      return []
+    }
+  }
+
+  /**
    * Clear the entitlement cache for a specific user
    */
   public clearUserCache(userId?: Snowflake): void {
@@ -223,6 +389,17 @@ export default class EntitlementHandler {
       this._entitlementCache.delete(userId)
     } else {
       this._entitlementCache.clear()
+    }
+  }
+
+  /**
+   * Clear the override cache for a specific guild
+   */
+  public clearOverrideCache(guildId?: Snowflake): void {
+    if (guildId) {
+      this._overrideCache.delete(guildId)
+    } else {
+      this._overrideCache.clear()
     }
   }
 
@@ -242,7 +419,9 @@ export default class EntitlementHandler {
     skuId: string
   ): Promise<IEntitlementCheck> {
     const userId = userOrMember.id
-    return this.hasEntitlement(userId, skuId)
+    const guildId =
+      userOrMember instanceof GuildMember ? userOrMember.guild.id : undefined
+    return this.hasEntitlement(userId, skuId, guildId)
   }
 
   /**

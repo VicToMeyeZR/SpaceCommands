@@ -1,4 +1,5 @@
-import { Client, ModalSubmitInteraction } from 'discord.js'
+// @ts-nocheck
+import { Client, ModalSubmitInteraction, MessageFlags } from 'discord.js'
 import SpaceCommands from '..'
 import getAllFiles from '../get-all-files'
 
@@ -87,7 +88,7 @@ export default class ModalHandler {
           if (!interaction.replied && !interaction.deferred) {
             await interaction.reply({
               content: 'An error occurred while processing this form.',
-              ephemeral: true,
+              flags: MessageFlags.Ephemeral,
             })
           }
         }

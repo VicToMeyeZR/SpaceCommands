@@ -87,29 +87,6 @@ export default class SpaceCommands extends EventEmitter {
       debug = false,
     } = options || {}
 
-    // Support for Supabase (recommended) or MongoDB (deprecated)
-    if (supabaseUrl && supabaseKey) {
-      initSupabase(supabaseUrl, supabaseKey)
-      this._supabaseClient = getSupabaseClient()
-
-      // Load prefixes from Supabase
-      const results: any[] = await prefixes.find({})
-
-      for (const result of results) {
-        const { _id, prefix } = result
-
-        this._prefixes[_id] = prefix
-      }
-    } else {
-      if (showWarns) {
-        console.warn(
-          'SpaceCommands > No database connection provided. Some features might not work! Please provide supabaseUrl and supabaseKey.'
-        )
-      }
-
-      this.emit(Events.DATABASE_CONNECTED, null, '')
-    }
-
     this._commandsDir = commandsDir || commandDir || this._commandsDir
     this._featuresDir = featuresDir || featureDir || this._featuresDir
     this._ephemeral = ephemeral
@@ -212,6 +189,37 @@ export default class SpaceCommands extends EventEmitter {
     this._entitlementHandler = new EntitlementHandler(this)
     this._pollHandler = new PollHandler(this)
     this._autoModHandler = new AutoModHandler(this)
+
+    // Support for Supabase (recommended) or MongoDB (deprecated)
+    // MOVED TO END TO PREVENT BLOCKING HANDLER INIT
+    if (supabaseUrl && supabaseKey) {
+      initSupabase(supabaseUrl, supabaseKey)
+      this._supabaseClient = getSupabaseClient()
+
+      // Load prefixes from Supabase
+      try {
+        const results: any[] = await prefixes.find({})
+
+        for (const result of results) {
+          const { _id, prefix } = result
+
+          this._prefixes[_id] = prefix
+        }
+      } catch (err) {
+        console.warn(
+          'SpaceCommands > Failed to load prefixes from Supabase:',
+          err
+        )
+      }
+    } else {
+      if (showWarns) {
+        console.warn(
+          'SpaceCommands > No database connection provided. Some features might not work! Please provide supabaseUrl and supabaseKey.'
+        )
+      }
+
+      this.emit(Events.DATABASE_CONNECTED, null, '')
+    }
 
     console.log('SpaceCommands > Your bot is now running.')
   }

@@ -212,11 +212,26 @@ class ReactionHandler {
 
     desc += `\n${instance.messageHandler.getEmbed(
       guild,
-      'HELP_MENU',
-      'SYNTAX'
+      'HELP_MENU'
     )}: "${instance.getPrefix(guild)}${mainName}${syntax ? ' ' : ''}${
       syntax || ''
     }"`
+
+    if (guild) {
+      const requiredRoles = command.getRequiredRoles(guild.id)
+      if (requiredRoles && requiredRoles.length) {
+        const roleNames: string[] = []
+        for (const roleId of requiredRoles) {
+          const role = guild.roles.cache.get(roleId)
+          if (role) {
+            roleNames.push(role.name)
+          } else {
+            roleNames.push(roleId)
+          }
+        }
+        desc += `\nRequired Roles: ${roleNames.join(', ')}`
+      }
+    }
 
     return desc
   }

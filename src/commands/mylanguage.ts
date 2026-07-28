@@ -1,67 +1,58 @@
-// @ts-nocheck
-import userLanguageSchema from '../models/user-languages'
+import { MessageFlags } from 'discord.js'
 import { ICallbackObject, ICommand } from '../..'
-import Events from '../enums/Events'
+
+let instance: any
 
 export = {
-    description: 'Displays or sets your personal language preference',
+    init: (client: any, inst: any) => {
+        instance = inst
+    },
+
     category: 'Configuration',
+    description: 'Set your personal language preference for the bot.',
 
-    aliases: ['mylang'],
-
-    maxArgs: 1,
-    expectedArgs: '[language]',
-
-    testOnly: true,
-
-    cooldown: '2s',
+    slash: true,
+    testOnly: false,
 
     options: [
         {
             name: 'language',
-            description: 'The language to set for yourself',
+            description: 'The language code (e.g., english, spanish)',
             type: 3, // STRING
-            required: false,
+            required: true,
+            autocomplete: true,
         },
     ],
 
-    slash: 'both',
+    autocomplete: (interaction: any) => {
+        const focusedValue = interaction.options.getFocused().toLowerCase()
+        const choices = instance.messageHandler.languages()
+        const filtered = choices.filter((choice: string) => choice.startsWith(focusedValue)).slice(0, 25)
+        interaction.respond(filtered.map((choice: string) => ({ name: choice, value: choice })))
+    },
 
     callback: async (options: ICallbackObject) => {
-        const { channel, text, instance, user } = options
+        const { interaction, instance, text, guild, user } = options
 
-        const { guild } = channel
-        // Allow in DMs
-        // if (!guild) {
-        //   return
-        // }
-
-        const { messageHandler } = instance
-
-        if (!instance.isDBConnected()) {
-            return instance.messageHandler.get(guild, 'NO_DATABASE_FOUND', {}, user)
+        if (!interaction || !interaction.isChatInputCommand()) {
+            return
         }
 
         const lang = text.toLowerCase()
 
-        if (!lang) {
-            return instance.messageHandler.get(guild, 'CURRENT_LANGUAGE', {
-                LANGUAGE: instance.messageHandler.getLanguage(guild, user),
-            }, user)
-        }
-
-        if (!messageHandler.languages().includes(lang)) {
-            instance.emit(Events.LANGUAGE_NOT_SUPPORTED, guild, lang)
-
-            return messageHandler.get(guild, 'LANGUAGE_NOT_SUPPORTED', {
-                LANGUAGE: lang,
-            }, user)
+        if (!instance.messageHandler.languages().includes(lang)) {
+            await interaction.reply({
+                content: instance.messageHandler.get(guild, 'LANGUAGE_NOT_SUPPORTED', { LANGUAGE: lang }),
+                flags: MessageFlags.Ephemeral,
+            })
+            return
         }
 
         await instance.messageHandler.setUserLanguage(user, lang)
 
-        return instance.messageHandler.get(guild, 'NEW_LANGUAGE', {
-            LANGUAGE: lang,
-        }, user)
+        await interaction.reply({
+            content: instance.messageHandler.get(guild, 'NEW_LANGUAGE', { LANGUAGE: lang }, user),
+            flags: MessageFlags.Ephemeral,
+        })
     },
 } as ICommand

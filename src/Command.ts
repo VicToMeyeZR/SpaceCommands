@@ -37,6 +37,8 @@ class Command {
   private _requiredChannels: Map<String, String[]> = new Map() // <GuildID-Command, Channel IDs>
   private _requiredEntitlements: string[] = []
   private _premiumOnly = false
+  private _delete = false
+  private _dbId = ''
 
   constructor(
     instance: SpaceCommands,
@@ -63,6 +65,7 @@ class Command {
       requireRoles = false,
       requiredEntitlements,
       premiumOnly = false,
+      delete: del = false,
     }: ICommand
   ) {
     this.instance = instance
@@ -90,6 +93,7 @@ class Command {
         ? [requiredEntitlements]
         : requiredEntitlements || []
     this._premiumOnly = premiumOnly
+    this._delete = del
 
     if (this.cooldown && this.globalCooldown) {
       throw new Error(
@@ -523,6 +527,18 @@ class Command {
 
   public get premiumOnly(): boolean {
     return this._premiumOnly
+  }
+
+  public get delete(): boolean {
+    return this._delete
+  }
+
+  public get dbId(): string {
+    return this._dbId
+  }
+
+  public setDbId(id: string) {
+    this._dbId = id
   }
 }
 

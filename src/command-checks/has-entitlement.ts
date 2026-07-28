@@ -12,6 +12,16 @@ export = async (
 ) => {
   const { requiredEntitlements, premiumOnly } = command
 
+  // Bypass for Bot Owners
+  if (instance.botOwner.includes(user.id)) {
+    return true
+  }
+
+  // Bypass for Test Servers
+  if (guild && instance.testServers.includes(guild.id)) {
+    return true
+  }
+
   // If no entitlements are required, allow the command
   if (!requiredEntitlements.length && !premiumOnly) {
     return true
@@ -36,7 +46,8 @@ export = async (
   if (requiredEntitlements.length > 0) {
     const { hasEntitlement } = await entitlementHandler.hasAnyEntitlement(
       user.id,
-      requiredEntitlements
+      requiredEntitlements,
+      guild?.id
     )
 
     let hasAccess = hasEntitlement
@@ -75,6 +86,12 @@ export = async (
   if (premiumOnly) {
     const allEntitlements = await entitlementHandler.getUserEntitlements(user.id)
     let hasPremium = allEntitlements.length > 0
+
+    // Check guild overrides if no user entitlement found
+    if (!hasPremium && guild) {
+      const overrides = await entitlementHandler.getGuildOverrides(guild.id)
+      hasPremium = overrides.length > 0
+    }
 
     if (!hasPremium && guild) {
       const guildEntitlements = await entitlementHandler.getGuildEntitlements(guild.id)
