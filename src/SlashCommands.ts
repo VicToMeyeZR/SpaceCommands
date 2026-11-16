@@ -17,6 +17,7 @@ import {
 import path from 'path'
 
 import getAllFiles from './get-all-files'
+import slashOptionsDiffer from './utils/slash-options-differ'
 import SpaceCommands from '.'
 
 const convertOptions = (options: any): any => {
@@ -206,19 +207,15 @@ class SlashCommands {
     return new Map()
   }
 
+  // Compares the registered options with the declared ones in full, at every
+  // depth. The previous check only looked at each top-level option's name,
+  // required flag and child COUNT, so renaming (or re-describing, re-typing,
+  // re-ordering) an option inside a subcommand was never sent to Discord.
   private didOptionsChange(
     command: ApplicationCommand,
     options: ApplicationCommandOptionData[]
   ): boolean {
-    return (
-      command.options?.filter((opt, index) => {
-        return (
-          opt?.required !== options[index]?.required ||
-          opt?.name !== options[index]?.name ||
-          (opt?.options && opt.options.length !== options[index]?.options?.length)
-        )
-      }).length !== 0
-    )
+    return slashOptionsDiffer(command.options, options)
   }
 
   public async create(

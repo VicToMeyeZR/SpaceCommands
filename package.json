@@ -9,6 +9,7 @@
     "compile": "tsc && node index.js",
     "dev": "nodemon -e ts --exec \"npm run compile\"",
     "build": "tsc",
+    "test": "npm run build && node --test test/slash-options-differ.test.js",
     "prepublishOnly": "npm run build"
   },
   "keywords": [

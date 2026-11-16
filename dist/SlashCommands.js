@@ -6,6 +6,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 const discord_js_1 = require("discord.js");
 const path_1 = __importDefault(require("path"));
 const get_all_files_1 = __importDefault(require("./get-all-files"));
+const slash_options_differ_1 = __importDefault(require("./utils/slash-options-differ"));
 const convertOptions = (options) => {
     if (!options)
         return options;
@@ -140,12 +141,12 @@ class SlashCommands {
         }
         return new Map();
     }
+    // Compares the registered options with the declared ones in full, at every
+    // depth. The previous check only looked at each top-level option's name,
+    // required flag and child COUNT, so renaming (or re-describing, re-typing,
+    // re-ordering) an option inside a subcommand was never sent to Discord.
     didOptionsChange(command, options) {
-        return (command.options?.filter((opt, index) => {
-            return (opt?.required !== options[index]?.required ||
-                opt?.name !== options[index]?.name ||
-                (opt?.options && opt.options.length !== options[index]?.options?.length));
-        }).length !== 0);
+        return (0, slash_options_differ_1.default)(command.options, options);
     }
     async create(name, description, options, guildId) {
         let commands;
