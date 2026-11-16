@@ -5,6 +5,26 @@ All notable changes to SpaceCommands will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.8.1] - 2026-11-16
+
+### Fixed
+- **Changes inside a subcommand were never sent to Discord.** `SlashCommands.create`
+  decides whether to re-register a command by comparing the registered options with the
+  declared ones, but the check only looked at each top-level option's name, `required`
+  flag and the *number* of child options. Renaming an option inside a subcommand — or
+  changing its description, type, choices, limits or order — left every one of those
+  equal, so the command was treated as unchanged and Discord kept the old definition.
+  The client then sent the old option name and the handler read the new one and got
+  `null`. The comparison now covers the whole option tree: name, type, description,
+  `required`, `autocomplete`, choices, channel types, min/max values and lengths,
+  localizations and order, at every depth. Both sides are normalised first (camelCase
+  vs snake_case keys, unset vs `false`, legacy string types), so an unchanged command is
+  not re-registered. Expect a one-time `Updating slash command` log line on first start
+  for any command whose registration had gone stale.
+
+### Added
+- `npm test`: builds, then runs the comparison tests with Node's built-in test runner.
+
 ## [3.8.0] - 2026-07-28
 
 ### Note on versioning
