@@ -56,63 +56,60 @@ client.on('ready', () => {
     testServers: ['YOUR_TEST_SERVER_ID'],
     botOwners: ['YOUR_USER_ID'],
     premiumServers: ['YOUR_PREMIUM_SERVER_ID'],
-    // Database (optional - Supabase recommended)
-    supabaseUrl: process.env.SUPABASE_URL,
-    supabaseKey: process.env.SUPABASE_KEY,
+    // Database (optional): any object implementing the Database interface
+    database: myDatabase,
   });
 });
 
 client.login(process.env.BOT_TOKEN);
 ```
 
-## Supabase Setup (Recommended)
+## Database Setup
 
-SpaceCommands uses Supabase for data persistence. Here's how to set it up:
+SpaceCommands stores its settings (prefixes, cooldowns, disabled commands, required
+roles, languages) in a database that **you** provide. It does not ship a database
+client: you pass in an object that implements a small interface, so any database
+can sit behind it.
 
-### 1. Create a Supabase Project
+### 1. Create the tables
 
-1. Go to [supabase.com](https://supabase.com) and create a free account
-2. Create a new project
-3. Copy your project URL and anon/public key
+Run `schema.sql` from this package against your database (it is plain SQL, written
+for PostgreSQL):
 
-### 2. Set Up the Database
-
-1. In your Supabase dashboard, go to the SQL Editor
-2. Copy the contents of `supabase-schema.sql` from this package
-3. Run the SQL to create all required tables
-
-Or download the schema:
 ```bash
-curl -o supabase-schema.sql https://raw.githubusercontent.com/VicToMeyeZR/SpaceCommands/main/supabase-schema.sql
+curl -o schema.sql https://raw.githubusercontent.com/VicToMeyeZR/SpaceCommands/main/schema.sql
+psql "$DATABASE_URL" -f schema.sql
 ```
 
-### 3. Configure Your Bot
+### 2. Pass in a database
 
 ```javascript
 new SpaceCommands(client, {
   commandsDir: path.join(__dirname, 'commands'),
-  supabaseUrl: process.env.SUPABASE_URL,        // Your Supabase project URL
-  supabaseKey: process.env.SUPABASE_ANON_KEY,   // Your Supabase anon/public key
+  database: myDatabase,
 });
 ```
 
-### 4. Environment Variables
+### The Database interface
 
-Create a `.env` file:
-```env
-DISCORD_TOKEN=your_bot_token_here
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_ANON_KEY=your_anon_key_here
-```
+`database` is any object with a `from(table)` method that returns an awaitable query:
 
-### Benefits of Supabase
+| Method | Meaning |
+|--------|---------|
+| `.select(columns?)` | Read rows |
+| `.upsert(row, { onConflict })` | Insert, or update the row that conflicts on the comma-separated `onConflict` columns |
+| `.delete()` | Delete the filtered rows |
+| `.eq(column, value)` | Filter: column equals value |
+| `.lte(column, value)` | Filter: column is less than or equal to value |
+| `.single()` | Resolve to one row object instead of an array |
 
-- ✅ **Free tier** with generous limits
-- ✅ **Real-time subscriptions** (optional)
-- ✅ **Built-in authentication** (if needed)
-- ✅ **Auto-generated APIs**
-- ✅ **Better performance** than MongoDB for most use cases
-- ✅ **PostgreSQL** under the hood
+Every chain resolves to `{ data, error }` and never rejects. `error` is `null` on
+success, otherwise `{ code, message }`. A `.single()` query that matches no row must
+resolve with `error.code === 'PGRST116'`.
+
+The TypeScript definition is exported from the package (`Database` in `typings.d.ts`,
+source in `src/database.ts`). A `@supabase/supabase-js` client already satisfies this
+interface, so existing Supabase users can pass `database: createClient(url, key)`.
 
 ## Creating Commands
 
@@ -152,9 +149,7 @@ module.exports = {
 |--------|------|-------------|---------|
 | `commandsDir` | string | Absolute path to commands directory | Required |
 | `featuresDir` | string | Absolute path to features directory | Optional |
-| `supabaseUrl` | string | Supabase project URL | Optional |
-| `supabaseKey` | string | Supabase anon/public key | Optional |
-| `mongoUri` | string | MongoDB URI (deprecated, use Supabase) | Optional |
+| `database` | Database | Where settings are stored (see Database Setup) | Optional |
 | `testServers` | string[] | Guild IDs for testing commands | [] |
 | `botOwners` | string[] | User IDs of bot owners | [] |
 | `defaultLanguage` | string | Default language for messages | 'english' |

@@ -1,11 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.TABLE_NAME = void 0;
-const supabase_1 = require("../supabase");
+const database_1 = require("../database");
 exports.TABLE_NAME = 'spacecommands_commands';
 const commands = {
     find: async (filter = {}) => {
-        const client = (0, supabase_1.getSupabaseClient)();
+        const client = (0, database_1.getDatabase)();
         if (!client)
             return [];
         let query = client.from(exports.TABLE_NAME).select('*');
@@ -23,7 +23,7 @@ const commands = {
         return data;
     },
     upsert: async (commandData) => {
-        const client = (0, supabase_1.getSupabaseClient)();
+        const client = (0, database_1.getDatabase)();
         if (!client)
             return null;
         const { data, error } = await client
@@ -38,7 +38,7 @@ const commands = {
         return data;
     },
     delete: async (id) => {
-        const client = (0, supabase_1.getSupabaseClient)();
+        const client = (0, database_1.getDatabase)();
         if (!client)
             return null;
         const { error } = await client

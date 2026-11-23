@@ -1,11 +1,11 @@
 // @ts-nocheck
-import { getSupabaseClient } from '../supabase'
+import { getDatabase, NO_ROW } from '../database'
 
 const TABLE_NAME = 'spacecommands_user_languages'
 
 export default {
     async find(filter: any = {}) {
-        const client = getSupabaseClient()
+        const client = getDatabase()
         if (!client) return []
 
         let query = client.from(TABLE_NAME).select('*')
@@ -28,7 +28,7 @@ export default {
     },
 
     async findOne(filter: any) {
-        const client = getSupabaseClient()
+        const client = getDatabase()
         if (!client) return null
 
         const { data, error } = await client
@@ -38,7 +38,7 @@ export default {
             .single()
 
         if (error) {
-            if (error.code === 'PGRST116') return null
+            if (error.code === NO_ROW) return null
             console.error('SpaceCommands > Error finding user language:', error)
             return null
         }
@@ -50,7 +50,7 @@ export default {
     },
 
     async findOneAndUpdate(filter: any, update: any, options: any = {}) {
-        const client = getSupabaseClient()
+        const client = getDatabase()
         if (!client) return null
 
         const userId = filter._id

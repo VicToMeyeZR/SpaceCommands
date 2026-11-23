@@ -5,7 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const events_1 = require("events");
 const FeatureHandler_1 = __importDefault(require("./FeatureHandler"));
-const supabase_1 = require("./supabase");
+const database_1 = require("./database");
 const prefixes_1 = __importDefault(require("./models/prefixes"));
 const message_handler_1 = __importDefault(require("./message-handler"));
 const SlashCommands_1 = __importDefault(require("./SlashCommands"));
@@ -22,7 +22,7 @@ class SpaceCommands extends events_1.EventEmitter {
     _defaultPrefix = '!';
     _commandsDir = 'commands';
     _featuresDir = '';
-    _supabaseClient = null;
+    _database = null;
     _displayName = '';
     _prefixes = {};
     _categories = new Map(); // <Category Name, Emoji Icon>
@@ -57,7 +57,7 @@ class SpaceCommands extends events_1.EventEmitter {
         if (!client) {
             throw new Error('No Discord JS Client provided as first argument!');
         }
-        let { commandsDir = '', commandDir = '', featuresDir = '', featureDir = '', componentsDir, modalsDir, contextMenusDir, messagesPath, supabaseUrl, supabaseKey, showWarns = true, delErrMsgCooldown = -1, defaultLanguage = 'english', ignoreBots = true, dbOptions, testServers, botOwners, disabledDefaultCommands = [], typeScript = false, ephemeral = true, debug = false, } = options || {};
+        let { commandsDir = '', commandDir = '', featuresDir = '', featureDir = '', componentsDir, modalsDir, contextMenusDir, messagesPath, database, showWarns = true, delErrMsgCooldown = -1, defaultLanguage = 'english', ignoreBots = true, dbOptions, testServers, botOwners, disabledDefaultCommands = [], typeScript = false, ephemeral = true, debug = false, } = options || {};
         this._commandsDir = commandsDir || commandDir || this._commandsDir;
         this._featuresDir = featuresDir || featureDir || this._featuresDir;
         this._ephemeral = ephemeral;
@@ -115,12 +115,15 @@ class SpaceCommands extends events_1.EventEmitter {
         this._entitlementHandler = new EntitlementHandler_1.default(this);
         this._pollHandler = new PollHandler_1.default(this);
         this._autoModHandler = new AutoModHandler_1.default(this);
-        // Support for Supabase (recommended) or MongoDB (deprecated)
+        // The application supplies the database (see ./database for the interface).
         // MOVED TO END TO PREVENT BLOCKING HANDLER INIT
-        if (supabaseUrl && supabaseKey) {
-            (0, supabase_1.initSupabase)(supabaseUrl, supabaseKey);
-            this._supabaseClient = (0, supabase_1.getSupabaseClient)();
-            // Load prefixes from Supabase
+        if (database) {
+            if (typeof database.from !== 'function') {
+                throw new Error('SpaceCommands > The "database" option must implement the Database interface (an object with a from(table) method).');
+            }
+            (0, database_1.setDatabase)(database);
+            this._database = database;
+            // Load prefixes from the database
             try {
                 const results = await prefixes_1.default.find({});
                 for (const result of results) {
@@ -129,12 +132,12 @@ class SpaceCommands extends events_1.EventEmitter {
                 }
             }
             catch (err) {
-                console.warn('SpaceCommands > Failed to load prefixes from Supabase:', err);
+                console.warn('SpaceCommands > Failed to load prefixes from the database:', err);
             }
         }
         else {
             if (showWarns) {
-                console.warn('SpaceCommands > No database connection provided. Some features might not work! Please provide supabaseUrl and supabaseKey.');
+                console.warn('SpaceCommands > No database provided. Some features might not work! Pass a "database" option.');
             }
             this.emit(Events_1.default.DATABASE_CONNECTED, null, '');
         }
@@ -242,15 +245,16 @@ class SpaceCommands extends events_1.EventEmitter {
     get commandHandler() {
         return this._commandHandler;
     }
-    get supabaseClient() {
-        return this._supabaseClient;
+    /** The database passed in through the "database" option, or null. */
+    get database() {
+        return this._database;
     }
     get mongoConnection() {
         // Deprecated: For backwards compatibility only
-        return this._supabaseClient;
+        return this._database;
     }
     isDBConnected() {
-        return !!this._supabaseClient;
+        return !!this._database;
     }
     setTagPeople(tagPeople) {
         this._tagPeople = tagPeople;

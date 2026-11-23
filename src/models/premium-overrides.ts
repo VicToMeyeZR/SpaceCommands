@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { getSupabaseClient } from '../supabase'
+import { getDatabase, NO_ROW } from '../database'
 
 const TABLE_NAME = 'spacecommands_premium_overrides'
 
@@ -8,7 +8,7 @@ export default {
    * Find overrides for a specific guild
    */
   async findOne(guildId: any) {
-    const client = getSupabaseClient()
+    const client = getDatabase()
     if (!client) return null
 
     const { data, error } = await client
@@ -18,7 +18,7 @@ export default {
       .single()
 
     if (error) {
-      if (error.code === 'PGRST116') return null
+      if (error.code === NO_ROW) return null
       console.error('SpaceCommands > Error finding premium override:', error)
       return null
     }
@@ -33,7 +33,7 @@ export default {
    * Set overrides for a guild
    */
   async setOverride(guildId: any, skuId: any) {
-    const client = getSupabaseClient()
+    const client = getDatabase()
     if (!client) return null
 
     const { data, error } = await client
@@ -57,7 +57,7 @@ export default {
    * Remove overrides for a guild
    */
   async removeOverrides(guildId: any) {
-    const client = getSupabaseClient()
+    const client = getDatabase()
     if (!client) return false
 
     const { error } = await client

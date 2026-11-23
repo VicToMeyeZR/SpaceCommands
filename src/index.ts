@@ -1,10 +1,9 @@
 // @ts-nocheck
 import { Client, ColorResolvable, Guild, GuildEmoji } from 'discord.js'
-import { SupabaseClient } from '@supabase/supabase-js'
 import { EventEmitter } from 'events'
 
 import FeatureHandler from './FeatureHandler'
-import { initSupabase, getSupabaseClient } from './supabase'
+import { Database, setDatabase } from './database'
 import prefixes from './models/prefixes'
 import MessageHandler from './message-handler'
 import SlashCommands from './SlashCommands'
@@ -23,7 +22,7 @@ export default class SpaceCommands extends EventEmitter {
   private _defaultPrefix = '!'
   private _commandsDir = 'commands'
   private _featuresDir = ''
-  private _supabaseClient: SupabaseClient | null = null
+  private _database: Database | null = null
   private _displayName = ''
   private _prefixes: { [name: string]: string } = {}
   private _categories: Map<String, String | GuildEmoji> = new Map() // <Category Name, Emoji Icon>
@@ -72,8 +71,7 @@ export default class SpaceCommands extends EventEmitter {
       modalsDir,
       contextMenusDir,
       messagesPath,
-      supabaseUrl,
-      supabaseKey,
+      database,
       showWarns = true,
       delErrMsgCooldown = -1,
       defaultLanguage = 'english',
@@ -190,13 +188,18 @@ export default class SpaceCommands extends EventEmitter {
     this._pollHandler = new PollHandler(this)
     this._autoModHandler = new AutoModHandler(this)
 
-    // Support for Supabase (recommended) or MongoDB (deprecated)
+    // The application supplies the database (see ./database for the interface).
     // MOVED TO END TO PREVENT BLOCKING HANDLER INIT
-    if (supabaseUrl && supabaseKey) {
-      initSupabase(supabaseUrl, supabaseKey)
-      this._supabaseClient = getSupabaseClient()
+    if (database) {
+      if (typeof database.from !== 'function') {
+        throw new Error(
+          'SpaceCommands > The "database" option must implement the Database interface (an object with a from(table) method).'
+        )
+      }
+      setDatabase(database)
+      this._database = database
 
-      // Load prefixes from Supabase
+      // Load prefixes from the database
       try {
         const results: any[] = await prefixes.find({})
 
@@ -207,14 +210,14 @@ export default class SpaceCommands extends EventEmitter {
         }
       } catch (err) {
         console.warn(
-          'SpaceCommands > Failed to load prefixes from Supabase:',
+          'SpaceCommands > Failed to load prefixes from the database:',
           err
         )
       }
     } else {
       if (showWarns) {
         console.warn(
-          'SpaceCommands > No database connection provided. Some features might not work! Please provide supabaseUrl and supabaseKey.'
+          'SpaceCommands > No database provided. Some features might not work! Pass a "database" option.'
         )
       }
 
@@ -360,17 +363,18 @@ export default class SpaceCommands extends EventEmitter {
     return this._commandHandler!
   }
 
-  public get supabaseClient(): SupabaseClient | null {
-    return this._supabaseClient
+  /** The database passed in through the "database" option, or null. */
+  public get database(): Database | null {
+    return this._database
   }
 
   public get mongoConnection(): any | null {
     // Deprecated: For backwards compatibility only
-    return this._supabaseClient
+    return this._database
   }
 
   public isDBConnected(): boolean {
-    return !!this._supabaseClient
+    return !!this._database
   }
 
   public setTagPeople(tagPeople: boolean): SpaceCommands {

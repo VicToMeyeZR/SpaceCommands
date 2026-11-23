@@ -1,11 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 // @ts-nocheck
-const supabase_1 = require("../supabase");
+const database_1 = require("../database");
 const TABLE_NAME = 'spacecommands_channel_commands';
 exports.default = {
     async find(filter = {}) {
-        const client = (0, supabase_1.getSupabaseClient)();
+        const client = (0, database_1.getDatabase)();
         if (!client)
             return [];
         let query = client.from(TABLE_NAME).select('*');
@@ -27,7 +27,7 @@ exports.default = {
         }));
     },
     async findOne(filter) {
-        const client = (0, supabase_1.getSupabaseClient)();
+        const client = (0, database_1.getDatabase)();
         if (!client)
             return null;
         let query = client.from(TABLE_NAME).select('*');
@@ -39,7 +39,7 @@ exports.default = {
         }
         const { data, error } = await query.single();
         if (error) {
-            if (error.code === 'PGRST116')
+            if (error.code === database_1.NO_ROW)
                 return null;
             console.error('SpaceCommands > Error finding channel command:', error);
             return null;
@@ -51,7 +51,7 @@ exports.default = {
         };
     },
     async findOneAndUpdate(filter, update, options = {}) {
-        const client = (0, supabase_1.getSupabaseClient)();
+        const client = (0, database_1.getDatabase)();
         if (!client)
             return null;
         const guildId = filter.guildId;
@@ -73,7 +73,7 @@ exports.default = {
         };
     },
     async deleteOne(filter) {
-        const client = (0, supabase_1.getSupabaseClient)();
+        const client = (0, database_1.getDatabase)();
         if (!client)
             return { deletedCount: 0 };
         let query = client.from(TABLE_NAME).delete();

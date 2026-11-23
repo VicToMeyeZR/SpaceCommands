@@ -1,14 +1,14 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 // @ts-nocheck
-const supabase_1 = require("../supabase");
+const database_1 = require("../database");
 const TABLE_NAME = 'spacecommands_premium_overrides';
 exports.default = {
     /**
      * Find overrides for a specific guild
      */
     async findOne(guildId) {
-        const client = (0, supabase_1.getSupabaseClient)();
+        const client = (0, database_1.getDatabase)();
         if (!client)
             return null;
         const { data, error } = await client
@@ -17,7 +17,7 @@ exports.default = {
             .eq('guild_id', guildId)
             .single();
         if (error) {
-            if (error.code === 'PGRST116')
+            if (error.code === database_1.NO_ROW)
                 return null;
             console.error('SpaceCommands > Error finding premium override:', error);
             return null;
@@ -31,7 +31,7 @@ exports.default = {
      * Set overrides for a guild
      */
     async setOverride(guildId, skuId) {
-        const client = (0, supabase_1.getSupabaseClient)();
+        const client = (0, database_1.getDatabase)();
         if (!client)
             return null;
         const { data, error } = await client
@@ -52,7 +52,7 @@ exports.default = {
      * Remove overrides for a guild
      */
     async removeOverrides(guildId) {
-        const client = (0, supabase_1.getSupabaseClient)();
+        const client = (0, database_1.getDatabase)();
         if (!client)
             return false;
         const { error } = await client

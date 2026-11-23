@@ -1,5 +1,5 @@
--- SpaceCommands Supabase Database Schema
--- Run this SQL in your Supabase project's SQL Editor to set up the required tables
+-- SpaceCommands database schema (PostgreSQL)
+-- Run this against your database to create the required tables, e.g. psql "$DATABASE_URL" -f schema.sql
 
 -- Table: spacecommands_prefixes
 -- Stores custom prefixes for guilds

@@ -13,6 +13,21 @@ import {
 import { EventEmitter } from 'events'
 import SpaceCommands from './src'
 
+/** One awaitable query. Resolves to `{ data, error }` and never rejects. */
+export interface DatabaseQuery<T = any> extends PromiseLike<{ data: T | null; error: { code?: string; message: string } | null }> {
+  select(columns?: string): DatabaseQuery<T>
+  upsert(values: object | object[], options?: { onConflict?: string }): DatabaseQuery<T>
+  delete(): DatabaseQuery<T>
+  eq(column: string, value: unknown): DatabaseQuery<T>
+  lte(column: string, value: unknown): DatabaseQuery<T>
+  single(): DatabaseQuery<T>
+}
+
+/** Where SpaceCommands stores its settings. Implement this for any database. */
+export interface Database {
+  from(table: string): DatabaseQuery
+}
+
 export default class SpaceCommands extends EventEmitter {
   private _client: Client
   private _defaultPrefix: string
@@ -91,8 +106,8 @@ interface OptionsWithS {
   modalsDir?: string
   contextMenusDir?: string
   messagesPath?: string
-  supabaseUrl: string
-  supabaseKey: string
+  /** Where SpaceCommands stores its settings. Any object implementing the Database interface. */
+  database?: Database
   showWarns?: boolean
   delErrMsgCooldown?: number
   defaultLanguage?: string
@@ -116,8 +131,8 @@ interface OptionsWithoutS {
   modalsDir?: string
   contextMenusDir?: string
   messagesPath?: string
-  supabaseUrl: string
-  supabaseKey: string
+  /** Where SpaceCommands stores its settings. Any object implementing the Database interface. */
+  database?: Database
   showWarns?: boolean
   delErrMsgCooldown?: number
   defaultLanguage?: string

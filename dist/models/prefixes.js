@@ -1,11 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 // @ts-nocheck
-const supabase_1 = require("../supabase");
+const database_1 = require("../database");
 const TABLE_NAME = 'spacecommands_prefixes';
 exports.default = {
     async find(filter = {}) {
-        const client = (0, supabase_1.getSupabaseClient)();
+        const client = (0, database_1.getDatabase)();
         if (!client)
             return [];
         let query = client.from(TABLE_NAME).select('*');
@@ -25,7 +25,7 @@ exports.default = {
         }));
     },
     async findOne(filter) {
-        const client = (0, supabase_1.getSupabaseClient)();
+        const client = (0, database_1.getDatabase)();
         if (!client)
             return null;
         const { data, error } = await client
@@ -34,7 +34,7 @@ exports.default = {
             .eq('guild_id', filter._id)
             .single();
         if (error) {
-            if (error.code === 'PGRST116')
+            if (error.code === database_1.NO_ROW)
                 return null; // No rows found
             console.error('SpaceCommands > Error finding prefix:', error);
             return null;
@@ -45,7 +45,7 @@ exports.default = {
         };
     },
     async findOneAndUpdate(filter, update, options = {}) {
-        const client = (0, supabase_1.getSupabaseClient)();
+        const client = (0, database_1.getDatabase)();
         if (!client)
             return null;
         const guildId = filter._id;
@@ -65,7 +65,7 @@ exports.default = {
         };
     },
     async deleteOne(filter) {
-        const client = (0, supabase_1.getSupabaseClient)();
+        const client = (0, database_1.getDatabase)();
         if (!client)
             return { deletedCount: 0 };
         const { error } = await client

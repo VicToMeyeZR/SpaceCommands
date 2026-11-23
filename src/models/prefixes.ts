@@ -1,11 +1,11 @@
 // @ts-nocheck
-import { getSupabaseClient } from '../supabase'
+import { getDatabase, NO_ROW } from '../database'
 
 const TABLE_NAME = 'spacecommands_prefixes'
 
 export default {
   async find(filter: any = {}) {
-    const client = getSupabaseClient()
+    const client = getDatabase()
     if (!client) return []
 
     let query = client.from(TABLE_NAME).select('*')
@@ -30,7 +30,7 @@ export default {
   },
 
   async findOne(filter: any) {
-    const client = getSupabaseClient()
+    const client = getDatabase()
     if (!client) return null
 
     const { data, error } = await client
@@ -40,7 +40,7 @@ export default {
       .single()
 
     if (error) {
-      if (error.code === 'PGRST116') return null // No rows found
+      if (error.code === NO_ROW) return null // No rows found
       console.error('SpaceCommands > Error finding prefix:', error)
       return null
     }
@@ -52,7 +52,7 @@ export default {
   },
 
   async findOneAndUpdate(filter: any, update: any, options: any = {}) {
-    const client = getSupabaseClient()
+    const client = getDatabase()
     if (!client) return null
 
     const guildId = filter._id
@@ -79,7 +79,7 @@ export default {
   },
 
   async deleteOne(filter: any) {
-    const client = getSupabaseClient()
+    const client = getDatabase()
     if (!client) return { deletedCount: 0 }
 
     const { error } = await client
