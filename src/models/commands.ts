@@ -1,10 +1,10 @@
-import { getSupabaseClient } from '../supabase'
+import { getDatabase } from '../database'
 
 export const TABLE_NAME = 'spacecommands_commands'
 
 const commands = {
   find: async (filter: any = {}) => {
-    const client = getSupabaseClient()
+    const client = getDatabase()
     if (!client) return []
 
     let query = client.from(TABLE_NAME).select('*')
@@ -27,7 +27,7 @@ const commands = {
   },
 
   upsert: async (commandData: any) => {
-    const client = getSupabaseClient()
+    const client = getDatabase()
     if (!client) return null
 
     const { data, error } = await client
@@ -45,7 +45,7 @@ const commands = {
   },
 
   delete: async (id: any) => {
-    const client = getSupabaseClient()
+    const client = getDatabase()
     if (!client) return null
 
     const { error } = await client
